@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Atmel Studio Solution File, Format Version 11.00
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Renalyx_DM1", "Renalyx_DM1.cproj", "{3851F264-3630-48DE-AE25-9FC4808CE3AB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
+		Release|ARM = Release|ARM
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3851F264-3630-48DE-AE25-9FC4808CE3AB}.Debug|ARM.ActiveCfg = Debug|ARM
+		{3851F264-3630-48DE-AE25-9FC4808CE3AB}.Debug|ARM.Build.0 = Debug|ARM
+		{3851F264-3630-48DE-AE25-9FC4808CE3AB}.Release|ARM.ActiveCfg = Release|ARM
+		{3851F264-3630-48DE-AE25-9FC4808CE3AB}.Release|ARM.Build.0 = Release|ARM
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

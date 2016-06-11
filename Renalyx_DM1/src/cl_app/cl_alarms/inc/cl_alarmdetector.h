@@ -1,0 +1,300 @@
+/*
+ * cl_alarmdetecor.h
+ *
+ * Created: 1/22/2014 10:14:10 AM
+ *  Author: user
+ */ 
+
+#include "cl_app/inc/cl_types.h"
+
+#ifndef CL_ALARMDETECOR_H_
+#define CL_ALARMDETECOR_H_
+#define CL_ALARM_TRIGGERED 1
+#define CL_ALARM_CLEARED 0
+typedef enum
+{
+	CL_ALARM_NOSTATE,
+	CL_ALARM_DETECTED,
+	CL_ALARM_ACTIVE,
+	CL_ALARM_MUTE,
+	CL_ALARM_INACTIVE
+}Cl_AlarmStateType;
+
+typedef enum
+{
+	CL_ALARM_NOTYPE,
+	CL_ALARM_ALARM,
+	CL_ALARM_ALERT,
+	CL_ALARM_HYBRID,
+	CL_ALARM_MAXTYPE
+	
+}Cl_AlarmType;
+typedef enum
+{
+	LOGIC_LOW,
+	LOGIC_HIGH,
+	ABOVE,
+	BELOW,
+	RANGE,
+	COUNT,
+	CHANGE,
+	LOW_HIGH,
+	HIGH_LOW,
+	MAX_TRIGGER
+	
+	
+}Cl_AlarmTriggerType;
+typedef struct  
+{
+	uint8_t cl_alarmID;
+	Cl_AlarmTriggerType cl_triggertype;
+	Cl_AlarmStateType cl_alarmstate;
+	Cl_AlarmType cl_alarmType;
+	uint16_t cl_upper;
+	uint16_t cl_lower;
+	uint8_t  count_threshold;
+	uint8_t cl_detected_count;
+	bool cl_is_enabled;
+	bool cl_is_raised;
+	
+	
+}Cl_AlarmStructType;
+
+
+typedef struct  
+{
+	int16_t cond_low_threshold;
+	int16_t cond_high_threshold;
+	int16_t cond_dac_high_threshold;
+	int16_t cond_dac_low_threshold;
+	float apt_high_threshold;
+	float apt_low_threshold;
+	float vpt_high_threshold;
+	float vpt_low_threshold;
+	float ps1_high_threshold;
+	float ps1_low_threshold;
+	float ps2_high_threshold;
+	float ps2_low_threshold;
+	float ps3_high_threshold;
+	float ps3_low_threshold;
+	float tmp_high_threshold;
+	float tmp_low_threshold;
+	float temp1_high_threshold;
+	float temp1_low_threshold;
+	float temp2_high_threshold;
+	float temp2_low_threshold;
+	float temp3_high_threshold;
+	float temp3_low_threshold;
+	float heater_high_temp_threshold;
+	int16_t hp_high_speed_threshold;
+	int16_t hp_low_speed_threshold;
+	int16_t bp_high_speed_threshold;
+	int16_t bp_low_speed_threshold;
+	int16_t uf_high_speed_threshold;
+	int16_t uf_low_speed_threshold;
+	int16_t flow_low_threshold;
+	int16_t flow_high_threshold;
+	int16_t ls_toggle_high_threshold;
+	int16_t ls_toggle_low_threshold;
+	int16_t bc_toggle_high_threshold;
+	int16_t bc_toggle_low_threshold;
+	
+
+}Cl_AlarmThresholdType;
+
+typedef enum
+{ 
+	SENSOR_NO_DEVICE, //0x00
+	SENSOR_BLOODDOOR_STATUS,//0x01
+	SENSOR_BYPASSDOOR_STATUS,//0x02
+	SENSOR_HOLDER1STATUS, // 0x03
+	SENSOR_HOLDER2STATUS,// 0x04
+	SENSOR_LEVELSWITCH,//0x05
+	SENSOR_COND_STATUS,//0x6
+	SENSOR_COND_DAC,//0x7
+	SENSOR_ABDSTATUS,//0x08
+	SENSOR_BDSTATUS,//0x09
+	SENSOR_APTSTATUS,//0x0A
+	SENSOR_VPTSTATUS,//0x0B
+	SENSOR_BLDSTATUS,//0x0C
+	SENSOR_PS1STATUS,//0x0D
+	SENSOR_PS2STATUS,//0x0E
+	SENSOR_PS3STATUS,//0x0F
+	SENSOR_PS4STATUS,//0x10
+	SENSOR_TEMP1STATUS,//0x11
+	SENSOR_TEMP2STATUS,//0x12
+	SENSOR_TEMP3STATUS,//0x13
+	SENSOR_FPCURRENTSTATUS,//0x14
+	SENSOR_DGPCURRENTSTATUS,//0x15
+	SENSOR_HP_START,//0x16
+	SENSOR_HP_END,//0x17
+	SENSOR_FLOW_SWITCH,//0x18
+	SENSOR_LEVEL_SWITCH,//0x19
+	SENSOR_UFP_FB,//0x1A
+	SENSOR_HP_FB,//0x1B
+	SENSOR_BP_FB,//ox1C
+	SENSOR_MAX_INPUT	//0x1D
+}Cl_SensorDeviceIdType;
+typedef enum
+{ 
+	ALARM_NO_ALARM,//0x00
+	BLOODDOOR_STATUS_OPEN,//0x01
+	BLOODDOOR_STATUS_CLOSED,
+	BYPASSDOOR_STATUS_OPEN,//0x02
+	BYPASSDOOR_STATUS_CLOSED,
+	HOLDER1STATUS_OPEN, // 0x3
+	HOLDER1STATUS_CLOSED,
+	HOLDER2STATUS_OPEN,// 0x04
+	HOLDER2STATUS_CLOSED,//0x05
+	LEVELSWITCH_OFF_TO_ON,
+	LEVELSWITCH_ON_TO_OFF,//0x6
+	COND_STATUS_LOW,//0x7
+	COND_STATUS_HIGH,//0x8
+	COND_DAC_OPEN,//0x9
+	COND_DAC_RO,//0xA
+	COND_DAC_HIGH,//0xB
+	ABDSTATUS_ON,//0x0D
+	BDSTATUS_ON,//0x0E
+	BDSTATUS_OFF,//0x0E
+	APTSTATUS_HIGH,//0x0F
+	APTSTATUS_LOW,
+	VPTSTATUS_HIGH,//0x10
+	VPTSTATUS_LOW,
+	BLDSTATUS_ON,//0x11
+	PS1STATUS_HIGH,//0x12
+	PS1STATUS_LOW,
+	PS2STATUS_HIGH,//0x13
+	PS2STATUS_LOW,
+	PS3STATUS_HIGH,
+	PS3STATUS_LOW,//0x14
+	PS4STATUS,//0x15
+	TEMP1STATUS_HIGH,//0x16
+	TEMP1STATUS_LOW,
+	TEMP2STATUS_HIGH,//0x17
+	TEMP2STATUS_LOW,
+	TEMP3STATUS_HIGH,//0x18
+	TEMP3STATUS_LOW,
+	FPCURRENTSTATUS,//0x19
+	DGPCURRENTSTATUS,//0x1A
+	UF_ROTATION_MARKER,//0x1B
+	FLOWSTATUS_FLOWON,//0x1C
+	FLOWSTATUS_FLOWOFF,//0x1D
+	HP_START,//0x1E
+	HP_END,//0x1F
+	HP_ROTATION_MARKER,//0x20
+	BP_ROTATION_MARKER, //0x21
+	FLOW_NO_FLOW,//0x22
+	FLOW_LOW_FLOWRATE,//ox23
+	FLOW_HIGH_FLOWRATE,//0x24
+	LEVEL_SWITCH_STOPPED,//0x25
+	LEVEL_SWITCH_LOW_TOGGLERATE,//0x26
+	LEVEL_SWITCH_HIGH_TOGGLERATE,
+	HEATER_UNSTABLE,
+	HEATER_HIGH_TEMP,
+	HEATER_FAILURE,
+	UFP_OVERRUN,
+	UFP_UNDERRUN,
+	HP_OVERRUN,
+	HP_UNDERRUN,
+	BP_OVERRUN,
+	BP_UNDERRUN,
+	CONSOLE_SYNC_LOST,
+	BC_OVERRUN,
+	BC_UNDERRUN,
+	BC_FAILED,
+	DE_CHAMBER,
+	SYSTEM_NOT_READY,
+	POWER_FAILURE,
+	WATCHDOG_TIMER,
+	ALARM_MAX_ID	//0x21
+}Cl_AlarmIdType;
+typedef enum
+{
+	_NO_ALARM, //0
+	_BLOODDOOR_STATUS_OPEN,//1
+	_BYPASSDOOR_STATUS_OPEN,//2
+	_HOLDER1STATUS_OPEN, // 3
+	_HOLDER2STATUS_OPEN,// 4
+	_HOLDER1STATUS_CLOSED, // 5
+	_HOLDER2STATUS_CLOSED,// 6
+	_COND_STATUS_LOW,//7
+	_COND_STATUS_HIGH,//8
+	_COND_DAC_OPEN,//9
+	_COND_DAC_RO,//10 //A
+	_COND_DAC_HIGH,//11 //B
+	_FLOW_NO_FLOW,//12 //C
+	_FLOW_LOW_FLOWRATE,//13 //D
+	_FLOW_HIGH_FLOWRATE,//14  //E
+	_LEVEL_SWITCH_STOPPED,//15 F
+	_LEVEL_SWITCH_LOW_TOGGLERATE,//16  10
+	_LEVEL_SWITCH_HIGH_TOGGLERATE,//17 11
+	_TEMP1_HIGH_THRESHOLD,//18 //12
+	_TEMP1_LOW_THRESHOLD, //19//13
+	_TEMP2_HIGH_THRESHOLD,//20 //14
+	_TEMP2_LOW_THRESHOLD, //21 //15
+	_TEMP3_HIGH_THRESHOLD,//22 //16
+	_TEMP3_LOW_THRESHOLD,//23 //17
+	_PS1_HIGH_THRESHOLD,//24 //18
+	_PS1_LOW_THRESHOLD,//25 //19
+	_PS2_HIGH_THRESHOLD,//26 //1A
+	_PS2_LOW_THRESHOLD,//27 //1B
+	_UF_ALARM_FOR_RINSE , //28 //1c
+	_BC_ALARM, //29 //1D
+	_DE_CHAMBER_LOW, //30 //1E
+	_SYSTEM_NOT_READY,//31 //1F
+	_POWER_FAILURE,//32 //20
+	_POWER_SUPPLY_OOR , //33 //21
+	_WATCHDOG_TIMER , //34 //22
+
+
+	//HP_START,//0x
+	//ABDSTATUS_ON,//0x06
+	//BDSTATUS_ON,//0x07
+	//APTSTATUS_HIGH,//0x08
+	//VPTSTATUS_HIGH,//0x09
+	//BLDSTATUS_ON,//0x0A
+	//PS1STATUS_HIGH,//0x0B
+	//PS2STATUS_HIGH,//0x0C
+	//PS3STATUS_HIGH,//0x0D
+	//PS4STATUS,//0x0E
+	//TEMP1STATUS_HIGH,//0x0F
+	//TEMP2STATUS_HIGH,//0x10
+	//TEMP3STATUS_HIGH,//0x11
+	//FPCURRENTSTATUS,//0x12
+	//DGPCURRENTSTATUS,//0x13
+//	UF_ROTATION_MARKER,//0x14
+//	FLOWSTATUS_FLOWON,//0x15
+	//FLOWSTATUS_FLOWOFF,//0x16
+	//HP_START,//0x17
+	//HP_END,//0x18
+	//HP_ROTATION_MARKER,//0x19
+	//BP_ROTATION_MARKER, //0x20
+// 	FLOW_NO_FLOW,
+// 	FLOW_LOW_FLOWRATE,
+// 	FLOW_HIGH_FLOWRATE,
+// 	LEVEL_SWITCH_STOPPED,
+// 	LEVEL_SWITCH_LOW_TOGGLERATE,
+// 	LEVEL_SWITCH_HIGH_TOGGLERATE,
+// 	HEATER_UNSTABLE,
+// 	HEATER_HIGH_TEMP,
+// 	HEATER_FAILURE,
+// 	UFP_OVERRUN,
+// 	UFP_UNDERRUN,
+// 	HP_OVERRUN,
+// 	HP_UNDERRUN,
+// 	BP_OVERRUN,
+// 	BP_UNDERRUN,
+// 	CONSOLE_SYNC_LOST,
+// 	BC_OVERRUN,
+// 	BC_UNDERRUN,
+// 	BC_FAILED,
+	_SENSOR_MAX_INPUT	//0x21
+}Cl_NewAlarmIdType;
+
+
+
+
+
+
+
+#endif /* CL_ALARMDETECOR_H_ */

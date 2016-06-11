@@ -1,0 +1,39 @@
+/*
+ * cl_bloodpumpcontroller.h
+ *
+ * Created: 11/6/2014 9:07:34 AM
+ *  Author: user
+ */ 
+
+
+#ifndef CL_BLOODPUMPCONTROLLER_H_
+#define CL_BLOODPUMPCONTROLLER_H_
+
+
+typedef enum {
+	
+	CL_BP_STATE_IDLE,
+	CL_BP_STATE_STARTED,
+	CL_BP_STATE_STOPPED,
+	CL_BP_STATE_PAUSED,
+	CL_BP_STATE_COMPLETED,
+	CL_BP_STATE_MAXSTATE
+	
+}cl_bp_states;
+typedef enum {
+	
+	CL_BP_EVENT_NULL,
+	CL_BP_EVENT_SET_BP_RATE,
+	CL_BP_EVENT_START,
+	CL_BP_EVENT_PAUSE,
+	CL_BP_EVENT_STOP,
+	CL_BP_EVENT_COMPLETED,
+	CL_BP_EVENT_SECOND,
+	CL_BP_EVENT_MAX_EVENT
+}cl_bp_events;
+
+
+
+
+
+#endif /* CL_BLOODPUMPCONTROLLER_H_ */
