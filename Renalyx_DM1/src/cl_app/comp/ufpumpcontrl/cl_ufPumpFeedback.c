@@ -10,7 +10,7 @@
 #include "inc/cl_ufPumpFeedback.h"
 #include "cl_app/inc/cl_types.h"
 
-extern Cl_ReturnCodes Cl_SysStat_GetSensor_Status_Query(Cl_AlarmIdType, uint16_t*);
+extern Cl_ReturnCodes Cl_SysStat_GetSensor_Status_Query(Cl_SensorDeviceIdType, uint16_t*);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 
 
@@ -58,7 +58,7 @@ Cl_ReturnCodes cl_ufpumpFeedback_timer(void) // 5 ms clock
 {
 	//cl_Datastreamtype cl_data;	
 	//cl_testgetsensordata(UF_ROTATION_MARKER,&uf_rotataion_marker);
-	Cl_SysStat_GetSensor_Status_Query(UF_ROTATION_MARKER, &uf_rotataion_marker);
+	Cl_SysStat_GetSensor_Status_Query(SENSOR_UFP_FB, &uf_rotataion_marker);
 
 	fivemscounter++;
 	if((cl_ufpump_state ==  CL_UFP_STATE_STARTED) && (uf_rotation_counter > 2))

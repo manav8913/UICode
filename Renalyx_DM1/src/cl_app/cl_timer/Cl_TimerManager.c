@@ -28,7 +28,7 @@ extern void testsectclock(void);
 extern void tg_timer_minute(void);
 extern Cl_ReturnCodes 	Cl_Mac_GetSystem_Status_Query(void);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
-extern Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_AlarmIdType cl_alarm_id , bool cl_status);
+extern Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_NewAlarmIdType cl_alarm_id , bool cl_status);
 extern void Cl_tg_prick_1ms();
  Cl_ReturnCodes  Cl_Timer_Create_Tick2Ms_Event(void);
  Cl_ReturnCodes  Cl_Timer_Create_Tick5Ms_Event(void);
@@ -112,7 +112,7 @@ if (FUNC_ENTRY == 1)
 			
 			if(syncdone)
 			{
-		//Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_IIC_HANGUP,(void*)0,0);
+		//		Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_IIC_HANGUP,(void*)0,0);
 			}
 		func_timer = 0;
 	}
@@ -219,9 +219,9 @@ if (FUNC_ENTRY == 1)
 	 
 	 
 	 {
-		 Cl_MacEvent2.Cl_MacEvent[Cl_MacEvent2.Cl_MacNewEventcount] = EVT_TICK_2M;
-		 Cl_MacEvent2.Cl_MacNewEvent = true;
-		 Cl_MacEvent2.Cl_MacNewEventcount++;
+	//	 Cl_MacEvent2.Cl_MacEvent[Cl_MacEvent2.Cl_MacNewEventcount] = EVT_TICK_2M;
+	//	 Cl_MacEvent2.Cl_MacNewEvent = true;
+	//	 Cl_MacEvent2.Cl_MacNewEventcount++;
 	 }
 	 return CL_OK;
 	 
@@ -233,9 +233,9 @@ if (FUNC_ENTRY == 1)
 	 
 	 
 	 {
-		 Cl_MacEvent2.Cl_MacEvent[Cl_MacEvent2.Cl_MacNewEventcount] = EVT_TICK_5M;
-		 Cl_MacEvent2.Cl_MacNewEvent = true;
-		 Cl_MacEvent2.Cl_MacNewEventcount++;
+	//	 Cl_MacEvent2.Cl_MacEvent[Cl_MacEvent2.Cl_MacNewEventcount] = EVT_TICK_5M;
+	//	 Cl_MacEvent2.Cl_MacNewEvent = true;
+	//	 Cl_MacEvent2.Cl_MacNewEventcount++;
 	 }
 	 return CL_OK;
 	 
@@ -247,9 +247,9 @@ if (FUNC_ENTRY == 1)
 	 
 	 
 	 {
-		 Cl_MacEvent2.Cl_MacEvent[Cl_MacEvent2.Cl_MacNewEventcount] = EVT_TICK_10M;
-		 Cl_MacEvent2.Cl_MacNewEvent = true;
-		 Cl_MacEvent2.Cl_MacNewEventcount++;
+	//	 Cl_MacEvent2.Cl_MacEvent[Cl_MacEvent2.Cl_MacNewEventcount] = EVT_TICK_10M;
+	//	 Cl_MacEvent2.Cl_MacNewEvent = true;
+	//	 Cl_MacEvent2.Cl_MacNewEventcount++;
 	 }
 	 return CL_OK;
 	 
@@ -265,6 +265,10 @@ if (FUNC_ENTRY == 1)
 		 	 Cl_MacEvent2.Cl_MacNewEvent = true;
 		 	 Cl_MacEvent2.Cl_MacNewEventcount++;
 	 	 }
+		 else
+		 {
+			 Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT ,"OF",2);
+		 }
 	 	 return CL_OK;
 	 	 
  }
@@ -282,6 +286,10 @@ if (FUNC_ENTRY == 1)
 		 Cl_MacEvent2.Cl_MacNewEvent = true;
 		 Cl_MacEvent2.Cl_MacNewEventcount++;
 	 }
+		 else
+		 {
+			 Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT ,"OF",2);
+		 }
 	 return CL_OK;
 	 
 	 
@@ -299,6 +307,10 @@ if (FUNC_ENTRY == 1)
 			 Cl_MacEvent2.Cl_MacEvent[Cl_MacEvent2.Cl_MacNewEventcount] = EVT_TICK_100M ;
 			 Cl_MacEvent2.Cl_MacNewEvent = true;
 			 Cl_MacEvent2.Cl_MacNewEventcount++;
+		 }
+		 else
+		 {
+			 Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT ,"OF",2);
 		 }
 		 return CL_OK;
 		 
@@ -318,6 +330,10 @@ if (FUNC_ENTRY == 1)
 			 Cl_MacEvent2.Cl_MacEvent[Cl_MacEvent2.Cl_MacNewEventcount] = EVT_TICK_500M ;
 			 Cl_MacEvent2.Cl_MacNewEvent = true;
 			 Cl_MacEvent2.Cl_MacNewEventcount++;
+		 }
+		 else
+		 {
+			 Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT ,"OF",2);
 		 }
 		 return CL_OK;
 		 
@@ -342,18 +358,21 @@ if (FUNC_ENTRY == 1)
 			 Cl_MacEvent2.Cl_MacNewEvent = true;
 			 Cl_MacEvent2.Cl_MacNewEventcount++;
 		 }
-		 
-	if(Cl_Secondscnt >= SIXTY)
-	 {
-		 Cl_Secondscnt = 0;
-		//  Cl_Minutes++;
-		 Cl_RetValue = Cl_Timer_Create_TickMin_Event();
-		 tg_timer_minute();
-	 }
-		 return CL_OK;
+		 else
+		 {
+			 Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT ,"OF",2);
+		 }		 
+		if(Cl_Secondscnt >= SIXTY)
+		 {
+			 Cl_Secondscnt = 0;
+			//  Cl_Minutes++;
+			 Cl_RetValue = Cl_Timer_Create_TickMin_Event();
+			 tg_timer_minute();
+		 }
+			 return CL_OK;
 		 
 		
-	 }
+		 }
 
 	 Cl_ReturnCodes  Cl_Timer_Create_TickMin_Event(void)
 	 {
@@ -364,6 +383,10 @@ if (FUNC_ENTRY == 1)
 			 Cl_MacEvent2.Cl_MacNewEvent = true;
 			 Cl_MacEvent2.Cl_MacNewEventcount++;
 			
+		 }
+		 else
+		 {
+			 Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT ,"OF",2);
 		 }
 		 return CL_OK;
 		 

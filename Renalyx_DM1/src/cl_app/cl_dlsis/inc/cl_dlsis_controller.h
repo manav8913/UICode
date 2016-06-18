@@ -17,6 +17,8 @@ typedef enum
 	EVENT_DLSIS_SET_DATA,
 	EVENT_DLSIS_START_DIALYSIS,
 	EVENT_DLSIS_STOP_DIALYSIS,
+	EVENT_DLSIS_PAUSE_DIALYSIS,
+	EVENT_DLSIS_PAUSE_BYPASS,
 	EVENT_DLSIS_TIMEOUT,
 	EVENT_DLSIS_OPENFILL_TIMEOUT,
 	EVENT_DLSIS_V2OPEN_TIMEOUT,
@@ -38,44 +40,17 @@ typedef enum
 {
 	CL_DLSIS_STATE_IDLE,
 	CL_DLSIS_STATE_INIT,
-	CL_DLSIS_STATE_WAIT_FOR_TEMP_STABILITY,
+	CL_DLSIS_STATE_WAIT_FOR_TEMP_COND_STABILITY,
+	CL_DLSIS_STATE_WAIT_FOR_BLOOD_DETECT,
 	CL_DLSIS_STATE_DIALYSIS,
 	CL_DLSIS_STATE_UF_ACTIVATION,
 	CL_DLSIS_STATE_POST_DIALYSIS_STANDBY,
-	CL_DLSIS_STATE_PAUSE,
-	CL_DLSIS_STATE_STOP,
+	CL_DLSIS_STATE_PAUSED,
+	CL_DLSIS_STATE_BYPASS,
+	CL_DLSIS_STATE_STOPPED,
 	CL_DLSIS_STATE_CRITICAL_ALARM,
 	CL_DLSIS_STATE_MAXSTATE
 } Cl_Dlsis_States;
-
-
-	typedef enum{
-		LOWER,
-		NORMAL,
-		CRITICAL
-	}ClDlsisAlarmSeverityType;
-	
-	
-typedef struct 
-{
-	
-	Cl_AlarmIdType Cl_DlsisAlarmId;
-	bool IsActive;
-	bool IsRaised;
-	bool userclear;
-	bool critical;
-	bool Mute;
-	
-}DlsisAlarmsType;
-
-
-typedef union{
-	
-	uint8_t bytearray[8] ;
-	uint16_t Twobyte  ;
-	uint32_t word ;
-	
-}cl_DlsisDatatype;
 
 
 typedef enum {
@@ -83,7 +58,7 @@ typedef enum {
 	CL_DLSIS_ALARM_LEVELSWITCHON,
 	CL_DLSIS_ALARM_LEVELSWITCHOFF,
 	CL_DLSIS_ALARM_HOLDER1,
-	CL_DLSIS_ALARM_HOLDER2,	
+	CL_DLSIS_ALARM_HOLDER2,
 	CL_DLSIS_COND_STATUS,
 	CL_DLSIS_HPSTATUS,
 	CL_DLSIS_ABDSTATUS,
@@ -102,7 +77,45 @@ typedef enum {
 	CL_DLSIS_UFPCURRENTSTATUS,
 	CL_DLSIS_ALRM_MAX
 	
-	} ClDlsisAlarmIdType;
+} ClDlsisAlarmIdType;
+
+typedef enum{
+	LOWER,
+	NORMAL,
+	CRITICAL
+}ClDlsisAlarmSeverityType;
+	
+typedef struct  
+{
+	uint8_t Cl_dlsissecondscounter  ;
+	uint8_t Cl_dlsisMinutescounter;
+	uint8_t Cl_dlsishourscounter;
+	uint8_t Cl_dlsisTotalMinutescounter;
+	uint8_t Cl_dlsisTotalhourscounter;
+}DlsisTimeType;
+	
+	
+typedef struct 
+{
+	
+	Cl_NewAlarmIdType Cl_DlsisAlarmId;
+	bool IsActive;
+	bool IsRaised;
+	bool userclear;
+	bool critical;
+	bool Mute;
+	
+}DlsisAlarmsType;
+
+
+typedef union{
+	
+	uint8_t bytearray[8] ;
+	uint16_t Twobyte  ;
+	uint32_t word ;
+	
+}cl_DlsisDatatype;
+
 
 
 #define CL_DLSIS_OPENFILL_TIMEOUT 1
@@ -117,9 +130,9 @@ typedef enum {
 
 #define CL_DLSIS_PATH_BO2_V13V14_TIMEOUT 1
 
-#define CL_DLSIS_TIMEOUT_MIN 240
+#define CL_DLSIS_TIMEOUT_MIN 2
 #define CL_DLSIS_TIMEOUT_HRS 0
-#define CL_DLSIS_DURATION 240
+#define CL_DLSIS_DURATION 2
 	
 //prototype definitions of local functions
 Cl_ReturnCodes Cl_Dlsis_Controller(MAC_EVENTS );

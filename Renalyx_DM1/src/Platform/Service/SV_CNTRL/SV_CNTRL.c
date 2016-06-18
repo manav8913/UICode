@@ -8,7 +8,10 @@
 #include "SV_CNTRL.h"
 #include "cl_app/inc/cl_types.h"
 #include "cl_app/cl_console/inc/cl_consolecontroller.h"
-#define BLOODPUMP_IIC_ADR 0x60
+//#define BLOODPUMP_IIC_ADR 0x60
+#ifndef BLOODPUMP_IIC_ADR
+#define BLOODPUMP_IIC_ADR 0x0E
+#endif
 //#define BLOODPUMP_IIC_ADR 0x61
 void DD_IIC_SET_BLOODPUP(uint8_t iic_address, uint8_t* data,uint8_t length);
 
@@ -201,6 +204,11 @@ uint8_t sv_cntrl_incheater(int32_t dty_val)
 //	dty_val = 2900;
 	
 	dummy1 = dty_val; 
+	
+	if(dty_val > 3500)
+	{
+		dty_val = 3500;
+	}
 	 dty_val = dty_val * 0.66;
 	 
 	 if ( dty_val > 0)
@@ -260,6 +268,7 @@ uint8_t sv_cntrl_enable_bypass()
 {
 
 	DD_ENABLE_BYPASS();
+	sv_cntrl_deactivatepump(UFPUMP);
 	return 0;
 
 }

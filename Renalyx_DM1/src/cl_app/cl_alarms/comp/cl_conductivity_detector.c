@@ -14,10 +14,10 @@ static uint16_t cl_ten_pt_dac_cond_avg = 0;
 static Sys_cond_statetype cond_state = CL_COND_STATE_NOSTATE;
 static Sys_dac_cond_statetype dac_cond_state = CL_COND_STATE_NOSTATE;
 
-Cl_ReturnCodes cl_get_conductivity_info(Cl_AlarmIdType* cl_alarmID);
-Cl_ReturnCodes cl_get_dac_conductivity_info(Cl_AlarmIdType* cl_dac_alarmID);
+Cl_ReturnCodes cl_get_conductivity_info(Cl_NewAlarmIdType* cl_alarmID);
+Cl_ReturnCodes cl_get_dac_conductivity_info(Cl_NewAlarmIdType* cl_dac_alarmID);
 
-Cl_ReturnCodes cl_get_conductivity_info(Cl_AlarmIdType* cl_alarmID)
+Cl_ReturnCodes cl_get_conductivity_info(Cl_NewAlarmIdType* cl_alarmID)
 {
 	static bool  started  = false;
 	
@@ -90,7 +90,7 @@ Cl_ReturnCodes cl_get_conductivity_info(Cl_AlarmIdType* cl_alarmID)
 	
 }
 
-Cl_ReturnCodes cl_get_dac_conductivity_info(Cl_AlarmIdType* cl_dac_alarmID)
+Cl_ReturnCodes cl_get_dac_conductivity_info(Cl_NewAlarmIdType* cl_dac_alarmID)
 {
 cl_ten_pt_dac_cond_avg = (9*cl_ten_pt_dac_cond_avg + cl_sys_statbuffer.cond_status_dac)/10;	
 switch(dac_cond_state)

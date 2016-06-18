@@ -10,10 +10,10 @@
 #include "cl_app/cl_console/inc/cl_consolecontroller.h"
 #include "cl_app/cl_testharness/inc/cl_th.h"
 
-extern Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_AlarmIdType cl_alarm_id , bool cl_status);
+extern Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_NewAlarmIdType cl_alarm_id , bool cl_status);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 
-extern Cl_ReturnCodes Cl_AlarmResetAlarm(Cl_AlarmIdType  );
+extern Cl_ReturnCodes Cl_AlarmResetAlarm(Cl_NewAlarmIdType  );
 
 Levelswitch_msgType Levelswitch_msg = {LEVEL_SWITCH_EVENT_UNDEFINED,0 };
 static uint16_t levelswitch_ontime =0, levelswitch_offtime = 0;

@@ -9,7 +9,7 @@
 #include "cl_app/cl_alarms/inc/cl_alarmdetector.h"
 #include "Platform/Service/sv_interface.h"
 #include "cl_app/cl_debug/inc/cl_debug.h"
-#include "cl_app/cl_heatcntrl/inc/cl_heatercontroller.c.h"
+#include "cl_app/cl_heatcntrl/inc/cl_heatercontroller.h"
 #include "cl_app//cl_bc_cntrl/inc/Cl_bc_controller.h"
 #include "cl_app/comp/flowswitchcntrl/inc/flowswitchcntrl.h"
 #include "cl_app//cl_dprep/inc/cl_dprep_primecontroller.h"
@@ -43,16 +43,16 @@ extern Cl_ReturnCodes        Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint
 extern Cl_ReturnCodes     Cl_SendDatatoconsole_dummy(Cl_ConsoleTxCommandtype,uint8_t*,uint8_t);
 extern Cl_ReturnCodes cl_wait(uint32_t );
 extern Cl_ReturnCodes Cl_mac_apprequesthandler(MAC_EVENTS);
-extern Cl_ReturnCodes Cl_AlarmActivateAlarms(Cl_AlarmIdType,bool );
-extern Cl_ReturnCodes Cl_AlarmResetAlarm(Cl_AlarmIdType  );
+extern Cl_ReturnCodes Cl_AlarmActivateAlarms(Cl_NewAlarmIdType,bool );
+extern Cl_ReturnCodes Cl_AlarmResetAlarm(Cl_NewAlarmIdType  );
 extern Cl_ConsoleMsgType Cl_ConsoleRxMsg;
 extern Cl_ReturnCodes  sv_nvmgetdata(uint8_t,uint8_t*);
-extern Cl_ReturnCodes Cl_Alarm_GetLastAlarm(Cl_AlarmIdType*);
+extern Cl_ReturnCodes Cl_Alarm_GetLastAlarm(Cl_NewAlarmIdType*);
 extern Cl_ReturnCodes Cl_Rinse_UpdateAlarmTable(ClRinseAlarmIdType*);
-extern Cl_ReturnCodes Cl_Alarm_GetAlarmStatus(Cl_AlarmIdType  , bool* );
+extern Cl_ReturnCodes Cl_Alarm_GetAlarmStatus(Cl_NewAlarmIdType  , bool* );
 extern Cl_ReturnCodes  sv_nvmsetdata(uint8_t ,uint8_t* ,uint8_t datasize);
 extern uint8_t sv_cntrl_setflowpath(sv_flowpathtype sv_flowpath);
-extern Cl_ReturnCodes 		Cl_SysStat_GetSensor_Status_Query(Cl_AlarmIdType, uint16_t*);
+extern Cl_ReturnCodes 		Cl_SysStat_GetSensor_Status_Query(Cl_NewAlarmIdType, uint16_t*);
 extern uint8_t sv_cntrl_deactivate_valve(sv_valvetype );
 extern uint8_t sv_cntrl_activate_valve(sv_valvetype );
 extern uint8_t  sv_cntrl_deactivatepump(sv_pumptype);
@@ -60,9 +60,9 @@ extern uint8_t  sv_cntrl_activatepump(sv_pumptype);
 extern uint8_t sv_cntrl_poweronheater(void);
 extern uint8_t sv_cntrl_poweroffheater(void);
 extern uint8_t sv_cntrl_incheater(int32_t dty_val);
-extern Cl_ReturnCodes Cl_AlarmConfigureAlarmType(Cl_AlarmIdType,Cl_AlarmTriggerType,uint16_t,uint16_t,uint8_t);
+extern Cl_ReturnCodes Cl_AlarmConfigureAlarmType(Cl_NewAlarmIdType,Cl_AlarmTriggerType,uint16_t,uint16_t,uint8_t);
 extern Cl_ReturnCodes UpdateHeaterControls(void);
-extern Cl_ReturnCodes SetHeaterState(RinseHeaterStateType Param_HeaterState);
+extern Cl_ReturnCodes SetHeaterState(HeaterStateType Param_HeaterState);
 extern Cl_ReturnCodes  Cl_bc_controller(Cl_BC_EventType cl_bc_event);
 extern Cl_ReturnCodes cl_flow_switchcontroller(flowswitchcntrl_event_type cntrl_event);
 extern Cl_ReturnCodes cl_dprep_primecontroller(Cl_Dprep_PrimeEvents prime_event , int16_t data);
@@ -80,8 +80,8 @@ Cl_ReturnCodes Cl_Rinse_CheckforRinseCompletion(void);
 Cl_ReturnCodes cl_rinse_notifydacandgotorinsestandby(void);
 Cl_ReturnCodes Cl_Rinse_Controller(MAC_EVENTS);
 Cl_ReturnCodes  Cl_Rinse_ProcessAlarms(void);
-Cl_ReturnCodes Cl_RinseConvertalarmidtouint8data(Cl_AlarmIdType cl_alarmId,uint8_t* data );
-Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid);
+Cl_ReturnCodes Cl_RinseConvertalarmidtouint8data(Cl_NewAlarmIdType cl_alarmId,uint8_t* data );
+Cl_ReturnCodes  CL_RinseAlarmActon(Cl_NewAlarmIdType cl_rinsealarmid);
 Cl_ReturnCodes  Cl_RinseFlowOn(void );
 Cl_ReturnCodes  Cl_RinseFlowOff(void );
 Cl_ReturnCodes  Cl_RinseStop(void);
@@ -93,17 +93,18 @@ Cl_ReturnCodes Cl_Rinse_StopRinse(void);
 Cl_ReturnCodes UpdateRinseMinuteTick(void);
 Cl_ReturnCodes Cl_Rinse_SendRinseStateData(void);
 Cl_ReturnCodes UpdateHeaterControls(void);
-Cl_ReturnCodes SetHeaterState(RinseHeaterStateType Param_HeaterState);
+Cl_ReturnCodes SetHeaterState(HeaterStateType Param_HeaterState);
 Cl_ReturnCodes cl_heater_heat(void);
 extern void sv_prop_startpropeo_aligning();
 extern void sv_prop_startmixing();
 extern void sv_prop_stopmixing();
+extern  Cl_ReturnCodes cl_dprep_activate_prime_related_alarms(void);
 //static void mdelay(uint32_t );
 
 //extern volatile uint32_t g_ul_ms_ticks ;
 Cl_Rinse_States cl_rinsestate = CL_RINSE_STATE_IDLE;
 Cl_Rinsing_SubStates cl_rinsing_substate = CL_RINSE_RINSING_IDLE;
-//RinseHeaterStateType HeaterState = CL_HEATER_STATE_OFF;
+//HeaterStateType HeaterState = CL_HEATER_STATE_OFF;
 //Cl_Rinse_Eevents cl_rinseevent;
 //extern SV_SetflowPath();
 
@@ -123,18 +124,24 @@ RinseAlarmsType Cl_RinseAlarmTable[CL_RINSE_ALRM_MAX] =
 	{LEVELSWITCH_ON_TO_OFF,CL_ALARM_ALERT,false,false,false},
 	{HOLDER1STATUS_OPEN,CL_ALARM_ALARM,false,false,false},
 	{HOLDER2STATUS_OPEN,CL_ALARM_ALARM,false,false,false},
-	{TEMP3STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
-	{TEMP3STATUS_LOW,CL_ALARM_ALARM,false,false,false},
-	{TEMP2STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
-	{PS1STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
-	{PS2STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
-	{PS3STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
+	{TEMP1_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{TEMP2_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{TEMP3_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{TEMP1_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{TEMP2_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{TEMP3_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{PS1_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{PS1_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{PS2_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{PS2_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{PS3_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{PS3_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},
 	{COND_STATUS_LOW,CL_ALARM_ALARM,false,false,false},
 	{COND_STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
 	{COND_DAC_OPEN,CL_ALARM_ALARM,false,false,false},
 	{COND_DAC_RO,CL_ALARM_ALERT,false,false,false},
 	{COND_DAC_HIGH,CL_ALARM_ALERT,false,false,false},
-	{FLOWSTATUS_FLOWOFF,CL_ALARM_ALARM,false,false,false},
+	{FLOW_NO_FLOW,CL_ALARM_ALARM,false,false,false},
 	{FLOW_LOW_FLOWRATE,CL_ALARM_ALARM,false,false,false},
 	{FLOW_HIGH_FLOWRATE,CL_ALARM_ALARM,false,false,false},
 	{LEVEL_SWITCH_LOW_TOGGLERATE,CL_ALARM_ALARM,false,false,false},
@@ -146,7 +153,7 @@ Cl_ReturnCodes Cl_Rinse_Controller(MAC_EVENTS Cl_MacRinseEvent   )
 	
 	Cl_ReturnCodes  Cl_rinseretcode = CL_OK;
 	Cl_Rinse_Eevents cl_rinseevent = EVENT_NULL_EVENT;
-	Cl_AlarmIdType cl_rinsealarmid;
+	Cl_NewAlarmIdType cl_rinsealarmid;
 	ClRinseAlarmIdType ClRinseAlarmId;
 
 	
@@ -154,38 +161,16 @@ Cl_ReturnCodes Cl_Rinse_Controller(MAC_EVENTS Cl_MacRinseEvent   )
 	uint8_t dataarray[4] = {0,0,0,0};
 	uint8_t data = 0;
 	bool alarmstatus1 = false,alarmstatus2 = false,alarmstatus3 = false, flowstatus = false;
-	static bool bcs_wait = false;
-	static bool V2_toggle = false;
-	static Cl_Rinse_OpenFillSubStates Cl_OpenFillSubState = CL_RINSE_STATE_OPENFILL_IDLE;
-	uint16_t Tmp2Val = 0;
-	
+
+
 
 
 cl_rinse_translatemacevent( Cl_MacRinseEvent, &cl_rinseevent);
-switch(cl_rinseevent)
-{
-	case EVENT_RINSE_TICK_SECOND:
-	//	Cl_rinseretcode = Cl_bc_controller(BC_EVENT_SECOND);
 
-	break;
-	case EVENT_RINSE_TICK_50MS:
-	//	Cl_rinseretcode = Cl_bc_controller(BC_EVENT_50MS);
-	break;
-	case EVENT_RINSE_TICK_500MS:
-	//	Cl_rinseretcode = Cl_bc_controller(BC_EVENT_500MS);
-	break;
-	case EVENT_RINSE_TICK_100MS:
-
-	break;
-
-	
-	default:break;
-	
-}
 if(cl_rinseevent == EVENT_RINSE_TICK_SECOND)
 {
 
-	//Cl_rinseretcode =  Cl_AlarmResetAlarm( TEMP3STATUS_HIGH );
+	//Cl_rinseretcode =  Cl_AlarmResetAlarm( SENSOR_TEMP3STATUS );
 	Cl_rinseretcode =  Cl_AlarmResetAlarm( LEVELSWITCH_OFF_TO_ON );
 	Cl_rinseretcode =  Cl_AlarmResetAlarm( LEVELSWITCH_ON_TO_OFF );
 
@@ -218,7 +203,14 @@ switch(cl_rinsestate)
 								command = CON_TX_COMMAND_SYSDATA;
 								dataarray[0] = CON_TX_PARAM_DATA_PRIME_STATUS;
 								Cl_rinseretcode = (uint8_t)sv_nvmgetdata(NV_NVM_PRIME_STATUS, &dataarray[1]);
-								Cl_rinseretcode = Cl_SendDatatoconsole(command,&dataarray,2);								
+								Cl_rinseretcode = Cl_SendDatatoconsole(command,&dataarray,2);	
+								break;
+								case CON_RX_PARAM_DATA_DISINF_STATUS:
+								command = CON_TX_COMMAND_SYSDATA;
+								dataarray[0] = CON_TX_PARAM_DATA_DISINF_STATUS;
+								Cl_rinseretcode = (uint8_t)sv_nvmgetdata(NV_NVM_DISINF_STATUS, &dataarray[1]);
+								Cl_rinseretcode = Cl_SendDatatoconsole(command,&dataarray,2);	
+								break;							
 								default:
 								break;
 							}
@@ -226,6 +218,24 @@ switch(cl_rinsestate)
 				break;
 				case EVENT_START_RINSE:
 						Cl_Rinse_StartRinse();
+					command = CON_TX_COMMAND_RINSE_CONFIRM;
+					data = (uint8_t)COMMAND_RESULT_SUCCESS;
+					Cl_rinseretcode = Cl_SendDatatoconsole(command,&data,1);					
+					command = CON_TX_COMMAND_RINSE_STARTED;
+					Cl_rinseretcode = Cl_SendDatatoconsole(command,&data,0);
+					Cl_rinseretcode = Cl_Rinse_UpdateTimeInfo();
+						cl_rinsestate = CL_RINSE_STATE_RINSING;
+						cl_rinsing_substate = CL_RINSE_RINSING_OPENFILL;
+				break;
+				case EVENT_START_PRE_DISINF_RINSE:
+					Cl_Rinse_StartRinse();
+					
+					cl_rinsestate = CL_RINSE_STATE_PRE_DISINFECT_RINSING;
+					cl_rinsing_substate = CL_RINSE_RINSING_OPENFILL;
+				break;
+				case EVENT_START_POST_DISINF_RINSE:
+						Cl_Rinse_StartRinse();
+						cl_rinsestate = CL_RINSE_STATE_POST_DISINFECT_RINSING;
 						cl_rinsing_substate = CL_RINSE_RINSING_OPENFILL;
 				break;
 				case EVENT_RINSE_ALARM:
@@ -238,6 +248,8 @@ switch(cl_rinsestate)
 		break;
 		
 		case CL_RINSE_STATE_RINSING:
+		case CL_RINSE_STATE_PRE_DISINFECT_RINSING:
+		case CL_RINSE_STATE_POST_DISINFECT_RINSING:
 				switch (cl_rinseevent)
 				{
 						case EVT_RINSE_SET_DATA:
@@ -345,7 +357,13 @@ switch(cl_rinsestate)
 										//Cl_rinseretcode = (uint8_t)sv_nvmgetdata(NV_NVM_PRIME_STATUS, &dataarray[1]);
 										dataarray[1] = 0;
 										Cl_rinseretcode = Cl_SendDatatoconsole(command,&dataarray,2);
-										break;					
+										break;		
+										case CON_RX_PARAM_DATA_DISINF_STATUS:
+										command = CON_TX_COMMAND_SYSDATA;
+										dataarray[0] = CON_TX_PARAM_DATA_DISINF_STATUS;
+										Cl_rinseretcode = (uint8_t)sv_nvmgetdata(NV_NVM_DISINF_STATUS, &dataarray[1]);
+										Cl_rinseretcode = Cl_SendDatatoconsole(command,&dataarray,2);	
+										break;			
 															
 										default:
 										break;
@@ -368,17 +386,31 @@ switch(cl_rinsestate)
 						//UpdateHeaterControls();
 						break;
 						case EVENT_RINSE_TICK_SECOND:
-						Cl_Rinse_SendRinseStateData();	
+						
+						if(cl_rinsestate == CL_RINSE_STATE_RINSING)
+						{
+							Cl_Rinse_SendRinseStateData();	
+						}
+						
 						
 
-						//	UpdateHeaterControls();
-							Cl_Rinsesecondscounter++;
-							if(Cl_Rinsesecondscounter == 60)
+					//	UpdateHeaterControls();
+						Cl_Rinsesecondscounter++;
+						if(Cl_Rinsesecondscounter == 60)
+						{
+
+											
+							Cl_Rinsesecondscounter = 0;
+							Cl_RinseMinutescounter++;
+							Cl_RinseTotalMinutescounter++;
+							if(cl_rinsestate == CL_RINSE_STATE_RINSING)
 							{
-								UpdateRinseMinuteTick();
+								Cl_rinseretcode = Cl_Rinse_UpdateTimeInfo();
 							}
+	
+						}
 						//	Cl_Rinse_ResetAlertsforReassertion();
-							Cl_rinseretcode = Cl_Rinse_ProcessAlarms();
+							//Cl_rinseretcode = Cl_Rinse_ProcessAlarms();
 					
 						break;
 						case EVENT_RINSE_TICK_MINUTE:
@@ -388,10 +420,22 @@ switch(cl_rinsestate)
 							Cl_Rinse_ResetAlertsforReassertion();
 							if(Cl_Rinse_CheckforRinseCompletion() == CL_OK )
 							{
+
+								Cl_rinseretcode = sv_cntrl_poweroffheater();
+								Cl_rinseretcode = cl_rinse_notifydacandgotorinsestandby();
+								if(cl_rinsestate == CL_RINSE_STATE_PRE_DISINFECT_RINSING)
+								{
+									Cl_rinseretcode = Cl_mac_apprequesthandler(MACREQ_PRE_DISINFECT_RINSE_COMPLETED);
+								}
+								else if(cl_rinsestate == CL_RINSE_STATE_POST_DISINFECT_RINSING)
+								{
+									Cl_rinseretcode = Cl_mac_apprequesthandler(MACREQ_POST_DISINFECT_RINSE_COMPLETED);
+								}
+								
+								
 								cl_rinsestate = CL_RINSE_STATE_POST_RINSE_STANDBY;
 								//	Cl_rinseretcode = (Cl_ReturnCodes)sv_setflowpath(Default path ?);//set appropirate flow path configuration
-								Cl_rinseretcode = sv_cntrl_poweroffheater();
-								Cl_rinseretcode = cl_rinse_notifydacandgotorinsestandby();	
+	
 							}
 						break;
 						case EVENT_RINSE_TICK_HOUR:
@@ -413,13 +457,13 @@ switch(cl_rinsestate)
 							//	sv_cntrl_activate_valve(VALVE_ID19);
 								cl_50ms_timer  = 1;
 							}
-							Cl_Alarm_GetAlarmStatus(TEMP2STATUS_HIGH,&alarmstatus3);
+							Cl_Alarm_GetAlarmStatus(SENSOR_TEMP2STATUS,&alarmstatus3);
 							if(alarmstatus3)
 							{
 								//	UpdateHeaterControls();
 							}
 					
-							Cl_Alarm_GetAlarmStatus(FLOWSTATUS_FLOWOFF,&flowstatus);
+							Cl_Alarm_GetAlarmStatus(FLOW_NO_FLOW,&flowstatus);
 							//	if(flowstatus)
 							//	{
 							//		Cl_rinseretcode = sv_cntrl_poweroffheater();
@@ -431,6 +475,7 @@ switch(cl_rinsestate)
 					//	if(cl_dprep_prime_state != CL_DPREP_PRIME_STATE_PRIMING)
 						{
 					//		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PRIME1",6);
+							cl_dprep_activate_prime_related_alarms();
 							cl_dprep_primecontroller(CL_DPREP_PRIME_PRIME_START,0);
 						}
 						
@@ -494,6 +539,24 @@ switch(cl_rinsestate)
 				{
 					case EVENT_START_RINSE:
 					Cl_Rinse_StartRinse();
+					command = CON_TX_COMMAND_RINSE_CONFIRM;
+					data = (uint8_t)COMMAND_RESULT_SUCCESS;
+					Cl_rinseretcode = Cl_SendDatatoconsole(command,&data,1);					
+					command = CON_TX_COMMAND_RINSE_STARTED;
+					Cl_rinseretcode = Cl_SendDatatoconsole(command,&data,0);
+						cl_rinsestate = CL_RINSE_STATE_RINSING;
+						cl_rinsing_substate = CL_RINSE_RINSING_OPENFILL;
+					break;
+					case EVENT_START_PRE_DISINF_RINSE:
+						Cl_Rinse_StartRinse();
+					
+						cl_rinsestate = CL_RINSE_STATE_PRE_DISINFECT_RINSING;
+						cl_rinsing_substate = CL_RINSE_RINSING_OPENFILL;
+					break;
+					case EVENT_START_POST_DISINF_RINSE:
+							Cl_Rinse_StartRinse();
+							cl_rinsestate = CL_RINSE_STATE_POST_DISINFECT_RINSING;
+							cl_rinsing_substate = CL_RINSE_RINSING_OPENFILL;
 					break;
 					case EVENT_STOP_RINSE:
 					Cl_Rinse_StopRinse();
@@ -510,6 +573,12 @@ switch(cl_rinsestate)
 							Cl_rinseretcode = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);
 							Cl_rinseretcode = Cl_SendDatatoconsole(command,&dataarray,2);
 						
+							break;
+							case CON_RX_PARAM_DATA_DISINF_STATUS:
+							command = CON_TX_COMMAND_SYSDATA;
+							dataarray[0] = CON_TX_PARAM_DATA_DISINF_STATUS;
+							Cl_rinseretcode = (uint8_t)sv_nvmgetdata(NV_NVM_DISINF_STATUS, &dataarray[1]);
+							Cl_rinseretcode = Cl_SendDatatoconsole(command,&dataarray,2);	
 							break;
 							default:
 							break;
@@ -543,6 +612,24 @@ switch(cl_rinsestate)
 				{
 					case EVENT_START_RINSE:
 					Cl_Rinse_StartRinse();
+					command = CON_TX_COMMAND_RINSE_CONFIRM;
+					data = (uint8_t)COMMAND_RESULT_SUCCESS;
+					Cl_rinseretcode = Cl_SendDatatoconsole(command,&data,1);					
+					command = CON_TX_COMMAND_RINSE_STARTED;
+					Cl_rinseretcode = Cl_SendDatatoconsole(command,&data,0);
+						cl_rinsestate = CL_RINSE_STATE_RINSING;
+						cl_rinsing_substate = CL_RINSE_RINSING_OPENFILL;
+					break;
+					case EVENT_START_PRE_DISINF_RINSE:
+						Cl_Rinse_StartRinse();
+					
+						cl_rinsestate = CL_RINSE_STATE_PRE_DISINFECT_RINSING;
+						cl_rinsing_substate = CL_RINSE_RINSING_OPENFILL;
+					break;
+					case EVENT_START_POST_DISINF_RINSE:
+							Cl_Rinse_StartRinse();
+							cl_rinsestate = CL_RINSE_STATE_POST_DISINFECT_RINSING;
+							cl_rinsing_substate = CL_RINSE_RINSING_OPENFILL;
 					break;
 					case EVT_RINSE_GET_DATA:
 					if(Cl_ConsoleRxMsg.msgready == true)
@@ -575,7 +662,12 @@ switch(cl_rinsestate)
 							dataarray[1] = 0;
 							Cl_rinseretcode = Cl_SendDatatoconsole(command,&dataarray,2);
 							break;
-							
+							case CON_RX_PARAM_DATA_DISINF_STATUS:
+							command = CON_TX_COMMAND_SYSDATA;
+							dataarray[0] = CON_TX_PARAM_DATA_DISINF_STATUS;
+							Cl_rinseretcode = (uint8_t)sv_nvmgetdata(NV_NVM_DISINF_STATUS, &dataarray[1]);
+							Cl_rinseretcode = Cl_SendDatatoconsole(command,&dataarray,2);	
+							break;
 							
 							default:
 							break;
@@ -587,6 +679,7 @@ switch(cl_rinsestate)
 					if(cl_dprep_prime_state != CL_DPREP_PRIME_STATE_PRIMING)
 					{
 						Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PRIME1",6);
+						cl_dprep_activate_prime_related_alarms();
 						cl_dprep_primecontroller(CL_DPREP_PRIME_PRIME_START,0);
 					}
 						
@@ -679,7 +772,14 @@ Cl_ReturnCodes  cl_rinse_translatemacevent(MAC_EVENTS Cl_MacRinseEvt,Cl_Rinse_Ee
 
 			
 		case  EVT_CONSOLE_COMMAND_RINSE_START:
+		
 		*cl_rinse_event= EVENT_START_RINSE;
+		break;
+		case  MACREQ_START_PRE_DISINF_RINSE:
+		*cl_rinse_event= EVENT_START_PRE_DISINF_RINSE;
+		break;
+		case  MACREQ_START_POST_DISINF_RINSE:
+		*cl_rinse_event= EVENT_START_POST_DISINF_RINSE;
 		break;
 		case EVT_CONSOLE_COMMAND_STOP_RINSE:
 		*cl_rinse_event= EVENT_STOP_RINSE;
@@ -796,19 +896,7 @@ Cl_ReturnCodes  cl_rinse_translatemacevent(MAC_EVENTS Cl_MacRinseEvt,Cl_Rinse_Ee
 	 uint8_t data[7] = {0,0,0,0,0 ,0,0};
 	 
 	command = CON_TX_COMMAND_REM_TIME;
-	#if 0
-	data[0]= (uint8_t)CLEAN_DATA;
-	data[1]= (uint8_t)Cl_RinsesTotalhourscounter; 
-	data[2]= (uint8_t)Cl_RinseTotalMinutescounter;
-	data[3]= (uint8_t)Cl_Rinsesecondscounter;
-	data[4]= (uint8_t) (CL_RINSE_TIMEOUT_HRS - Cl_RinsesTotalhourscounter );
-	data[5]= (uint8_t) (CL_RINSE_TIMEOUT_MIN - Cl_RinseTotalMinutescounter );
-	data[6]= (uint8_t) (60 - Cl_Rinsesecondscounter );
-	
-	Cl_rinseretcode = Cl_SendDatatoconsole(command,&data,7);
-	//Cl_rinseretcode = Cl_SendDatatoconsole(command,&data,1);
-	
-	#endif
+
 	
 		data[0]= (uint8_t)CLEAN_DATA;
 		data[1]= (uint8_t)Cl_RinseTotalMinutescounter;
@@ -877,9 +965,15 @@ Cl_ReturnCodes cl_rinse_notifydacandgotorinsestandby(void)
 	Cl_RinsesTotalhourscounter=0;
 	
 	data = 1;
-	Cl_rinseretcode2 = sv_nvmsetdata(NV_NVM_RINSE_STATUS,&data,1);
-	Cl_rinseretcode2 = Cl_SendDatatoconsole(CON_TX_COMMAND_RINSE_COMPLETED,&data,0);
-	Cl_rinseretcode2 = Cl_mac_apprequesthandler(MACREQ_RINSE_COMPLETED);
+	if((cl_rinsestate == CL_RINSE_STATE_RINSING)  )
+	{
+		Cl_rinseretcode2 = sv_nvmsetdata(NV_NVM_RINSE_STATUS,&data,1);
+		Cl_rinseretcode2 = Cl_SendDatatoconsole(CON_TX_COMMAND_RINSE_COMPLETED,&data,0);
+		Cl_rinseretcode2 = Cl_mac_apprequesthandler(MACREQ_RINSE_COMPLETED);
+		
+	}
+	
+
 						
 	return Cl_rinseretcode2;
 }
@@ -890,7 +984,7 @@ Cl_ReturnCodes Cl_Rinse_UpdateAlarmTable(ClRinseAlarmIdType* ClRinseAlarmId )
 	uint8_t tempcount = 0;
 	uint8_t data[3] ={0, 0} ,*data1 = NULL;
 	uint8_t data3;
-	Cl_AlarmIdType cl_alarmId;
+	Cl_NewAlarmIdType cl_alarmId;
 	
 	Cl_ConsoleTxCommandtype command = CON_TX_COMMAND_COMMAND_MAX;
 	
@@ -940,7 +1034,7 @@ Cl_ReturnCodes Cl_Rinse_ProcessAlarms(void )
 		ClRinseAlarmIdType ClRinseAlarmId;
 		uint8_t data;
 		Cl_ConsoleTxCommandtype command = CON_TX_COMMAND_COMMAND_MAX;
-		Cl_AlarmIdType cl_rinsealarmid;
+		Cl_NewAlarmIdType cl_rinsealarmid;
 	
 	   Cl_rinseretcode = Cl_Rinse_UpdateAlarmTable(&ClRinseAlarmId);
 
@@ -955,14 +1049,14 @@ Cl_ReturnCodes Cl_Rinse_ResetAlertsforReassertion(void )
 	ClRinseAlarmIdType ClRinseAlarmId;
 	uint8_t data;
 	Cl_ConsoleTxCommandtype command = CON_TX_COMMAND_COMMAND_MAX;
-	Cl_AlarmIdType cl_rinsealarmid;
+	Cl_NewAlarmIdType cl_rinsealarmid;
 	
 		
-	Cl_RinseAlarmTable[CL_RINSE_ALARM_BLOODDOOR_STATUS].IsRaised = false;
-	Cl_AlarmResetAlarm(BLOODDOOR_STATUS_CLOSED);
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_BLOODDOOR_STATUS_OPEN].IsRaised = false;
 	Cl_AlarmResetAlarm(BLOODDOOR_STATUS_OPEN);
-	Cl_RinseAlarmTable[CL_RINSE_ALARM_LEVELSWITCHON].IsRaised = false;
-	Cl_RinseAlarmTable[CL_RINSE_ALARM_LEVELSWITCHOFF].IsRaised = false;
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_BYPASSDOOR_STATUS_OPEN].IsRaised = false;
+	Cl_AlarmResetAlarm(BYPASSDOOR_STATUS_OPEN);
+
 	Cl_RinseAlarmTable[CL_RINSE_ALARM_COND_STATUS_LOW].IsRaised = false;
 	Cl_AlarmResetAlarm(COND_STATUS_LOW);
 	Cl_RinseAlarmTable[CL_RINSE_ALARM_COND_STATUS_HIGH].IsRaised = false;
@@ -970,31 +1064,34 @@ Cl_ReturnCodes Cl_Rinse_ResetAlertsforReassertion(void )
 	Cl_RinseAlarmTable[CL_RINSE_ALARM_COND_DAC_OPEN].IsRaised = false;
 	Cl_RinseAlarmTable[CL_RINSE_ALARM_COND_DAC_RO].IsRaised = false;
 	Cl_RinseAlarmTable[CL_RINSE_ALARM_COND_DAC_HIGH].IsRaised = false;
-	Cl_RinseAlarmTable[CL_RINSE_ALARM_PS1STATUS].IsRaised = false;
-	Cl_AlarmResetAlarm(PS1STATUS_LOW);
-	Cl_AlarmResetAlarm(PS1STATUS_HIGH);
-	Cl_RinseAlarmTable[CL_RINSE_ALARM_PS2STATUS].IsRaised = false;
-	Cl_AlarmResetAlarm(PS2STATUS_LOW);
-	Cl_AlarmResetAlarm(PS2STATUS_HIGH);
-	Cl_RinseAlarmTable[CL_RINSE_ALARM_PS3STATUS].IsRaised = false;
-	Cl_AlarmResetAlarm(PS3STATUS_LOW);
-	Cl_AlarmResetAlarm(PS3STATUS_HIGH);
-	Cl_RinseAlarmTable[CL_RINSE_ALARM_TEMP2STATUS].IsRaised = false;
-	Cl_AlarmResetAlarm(TEMP2STATUS_HIGH);
-	Cl_AlarmResetAlarm(TEMP2STATUS_LOW);
-	Cl_RinseAlarmTable[CL_RINSE_ALARM_TEMP3STATUS].IsRaised = false;
-	Cl_RinseAlarmTable[CL_RINSE_ALARM_TEMP3STATUS_LOW].IsRaised = false;
-	Cl_AlarmResetAlarm(TEMP3STATUS_HIGH);
-	Cl_AlarmResetAlarm(TEMP3STATUS_LOW);
-	Cl_RinseAlarmTable[CL_RINSE_ALARM_HOLDER1].IsRaised = false;
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_PS1_HIGH_THRESHOLD].IsRaised = false;
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_PS1_LOW_THRESHOLD].IsRaised = false;
+	Cl_AlarmResetAlarm(PS1_HIGH_THRESHOLD);
+	Cl_AlarmResetAlarm(PS1_LOW_THRESHOLD);
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_PS2_HIGH_THRESHOLD].IsRaised = false;
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_PS2_LOW_THRESHOLD].IsRaised = false;
+	Cl_AlarmResetAlarm(PS2_HIGH_THRESHOLD);
+	Cl_AlarmResetAlarm(PS2_LOW_THRESHOLD);
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_PS3_HIGH_THRESHOLD].IsRaised = false;
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_PS2_LOW_THRESHOLD].IsRaised = false;
+	Cl_AlarmResetAlarm(PS3_LOW_THRESHOLD);
+	Cl_AlarmResetAlarm(PS3_HIGH_THRESHOLD);
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_TEMP2_HIGH_THRESHOLD].IsRaised = false;
+	Cl_AlarmResetAlarm(TEMP2_LOW_THRESHOLD);
+	Cl_AlarmResetAlarm(TEMP2_HIGH_THRESHOLD);
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_TEMP3_HIGH_THRESHOLD].IsRaised = false;
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_TEMP3_LOW_THRESHOLD].IsRaised = false;
+	Cl_AlarmResetAlarm(TEMP2_HIGH_THRESHOLD);
+	Cl_AlarmResetAlarm(TEMP2_LOW_THRESHOLD);
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_HOLDER1STATUS_OPEN].IsRaised = false;
 	Cl_AlarmResetAlarm(HOLDER1STATUS_OPEN);
 	Cl_AlarmResetAlarm(HOLDER1STATUS_CLOSED);
-	Cl_RinseAlarmTable[CL_RINSE_ALARM_HOLDER2].IsRaised = false;
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_HOLDER2STATUS_OPEN].IsRaised = false;
 	Cl_AlarmResetAlarm(HOLDER2STATUS_OPEN);
 	Cl_AlarmResetAlarm(HOLDER2STATUS_CLOSED);
-	Cl_RinseAlarmTable[CL_RINSE_FLOWSTATUS_FLOWOFF].IsRaised = false;
-	Cl_RinseAlarmTable[CL_RINSE_FLOW_LOW_FLOWRATE].IsRaised = false;
-	Cl_RinseAlarmTable[CL_RINS_LEVEL_SWITCH_LOW_TOGGLERATE].IsRaised = false;
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_FLOW_NO_FLOW].IsRaised = false;
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_FLOW_LOW_FLOWRATE].IsRaised = false;
+	Cl_RinseAlarmTable[CL_RINSE_ALARM_LEVEL_SWITCH_LOW_TOGGLERATE].IsRaised = false;
 	
 	
 	
@@ -1002,7 +1099,7 @@ Cl_ReturnCodes Cl_Rinse_ResetAlertsforReassertion(void )
 }
 
 
-Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid)
+Cl_ReturnCodes  CL_RinseAlarmActon(Cl_NewAlarmIdType cl_rinsealarmid)
 {
 		Cl_ReturnCodes 	Cl_rinseretcode = CL_OK;
 			uint8_t data[3] ={0, 0} ,*data1 = NULL;
@@ -1022,7 +1119,7 @@ Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid)
 			
 			case BLOODDOOR_STATUS_OPEN:
 				Cl_Rinse_StopRinse();
-				NewAlarmId = _BLOODDOOR_STATUS_OPEN;
+		//		NewAlarmId = _BLOODDOOR_STATUS_OPEN;
 				cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"BPD",3);
 				Cl_SysStat_GetSensor_Status_Query(BLOODDOOR_STATUS_OPEN,&levelswitchstatus);
@@ -1031,7 +1128,7 @@ Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid)
 			case HOLDER1STATUS_OPEN:
 			// stop rinsing
 			Cl_Rinse_StopRinse();
-			NewAlarmId = _HOLDER1STATUS_OPEN;
+		//	NewAlarmId = _HOLDER1STATUS_OPEN;
 			cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"HLD1",4);
 			Cl_SysStat_GetSensor_Status_Query(HOLDER1STATUS_OPEN,&levelswitchstatus);
@@ -1040,48 +1137,20 @@ Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid)
 			case HOLDER2STATUS_OPEN:
 			// stop rinsing
 			Cl_Rinse_StopRinse();
-			NewAlarmId = _HOLDER2STATUS_OPEN;
+		//	NewAlarmId = _HOLDER2STATUS_OPEN;
 			cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"HLD2",4);
 			//enterl_saferinse_state();
 			break;
-			case LEVELSWITCH_OFF_TO_ON:
-			// TURN OFF  WATER INLET
-			NewAlarmId = _NO_ALARM;
-			Cl_SysStat_GetSensor_Status_Query(LEVELSWITCH_OFF_TO_ON,&levelswitchstatus);
-			{
-				if(levelswitchstatus == 1)
-				{
-	
-					//fillseccounter++;
 
-				//	Cl_RinseFlowOff();
-					cl_gfillinprogress = false;		
-					
-				}
-			}
-			break;
-			case LEVELSWITCH_ON_TO_OFF:
-			// TURN ON WATER INLET
-			NewAlarmId = _NO_ALARM;
-			Cl_SysStat_GetSensor_Status_Query(LEVELSWITCH_ON_TO_OFF,&levelswitchstatus);
-			{
-				if(levelswitchstatus == 0)
-				{
-
-					cl_gfillinprogress = true;
-					
-				}
-			}
-			break;
-			case TEMP1STATUS_HIGH:
+			case TEMP1_HIGH_THRESHOLD:
 		
-			Cl_SysStat_GetSensor_Status_Query(TEMP1STATUS_HIGH,&TmpVal);
+			Cl_SysStat_GetSensor_Status_Query(TEMP1_HIGH_THRESHOLD,&TmpVal);
 		//
 			temp1 = (0.805 * TmpVal) - 1004 ;
 
 			{
-				NewAlarmId = _TEMP1_HIGH_THRESHOLD;
+		//		NewAlarmId = _TEMP1_HIGH_THRESHOLD;
 				Cl_Rinse_StopRinse();
 			//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS1",3);
 				cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
@@ -1090,22 +1159,22 @@ Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid)
 
 			break;
 			
-			case TEMP1STATUS_LOW:
-				NewAlarmId = _TEMP1_LOW_THRESHOLD;
+			case PS1_HIGH_THRESHOLD:
+			//	NewAlarmId = _TEMP1_LOW_THRESHOLD;
 				Cl_Rinse_StopRinse();
 			//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS1",3);
 				cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			
 			break;
-			case TEMP2STATUS_HIGH:
+			case TEMP2_HIGH_THRESHOLD:
 		
-			Cl_SysStat_GetSensor_Status_Query(TEMP2STATUS_HIGH,&TmpVal);
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP2STATUS,&TmpVal);
 	
 			temp1 = (0.805 * TmpVal) - 1004 ;
 			temp2 = 3000 + (temp1 * 1000)/382;
 			if(temp2 > 3680)
 			{
-				NewAlarmId = _TEMP2_HIGH_THRESHOLD;
+			//	NewAlarmId = _TEMP2_HIGH_THRESHOLD;
 				Cl_Rinse_StopRinse();
 			//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS1",3);
 				cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
@@ -1113,17 +1182,18 @@ Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid)
 
 
 			break;
-			case TEMP2STATUS_LOW:
-				NewAlarmId = _TEMP2_LOW_THRESHOLD;
+			case TEMP2_LOW_THRESHOLD:
+			
+			//	NewAlarmId = _TEMP2_LOW_THRESHOLD;
 				Cl_Rinse_StopRinse();
 			//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS1",3);
 				cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			break;
 
-			case TEMP3STATUS_HIGH:
+			case TEMP3_HIGH_THRESHOLD:
 				
 			{
-					NewAlarmId = _TEMP3_HIGH_THRESHOLD;
+			//		NewAlarmId = _TEMP3_HIGH_THRESHOLD;
 					Cl_Rinse_StopRinse();
 			//		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS1",3);
 					cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
@@ -1131,66 +1201,60 @@ Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid)
 
 
 			break;
-			case TEMP3STATUS_LOW:
-					NewAlarmId = _TEMP3_LOW_THRESHOLD;
+			case TEMP3_LOW_THRESHOLD:
+			//		NewAlarmId = _TEMP3_LOW_THRESHOLD;
 					Cl_Rinse_StopRinse();
 			//		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS1",3);
 					cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			break;
-			case 	PS1STATUS_HIGH:
-			NewAlarmId = _PS1_HIGH_THRESHOLD;
-			Cl_Rinse_StopRinse();
-			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS1",3);
-			cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
-			
-			break;
-			case	PS2STATUS_HIGH:
-			NewAlarmId = _PS2_HIGH_THRESHOLD;
+
+			case	PS2_HIGH_THRESHOLD:
+		//	NewAlarmId = _PS2_HIGH_THRESHOLD;
 			Cl_Rinse_StopRinse();
 			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS2",3);
 			cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			
 			break;
-			case	PS3STATUS_HIGH:
-			NewAlarmId = _NO_ALARM;
+			case	PS3_HIGH_THRESHOLD:
+		//	NewAlarmId = _NO_ALARM;
 			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS3",3);
 			Cl_Rinse_StopRinse();
 			cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			
 			break;
-			case FLOWSTATUS_FLOWOFF:
+			case FLOW_NO_FLOW:
 			
 			Cl_Rinse_StopRinse();
-			NewAlarmId = _FLOW_NO_FLOW;
+		//	NewAlarmId = _FLOW_NO_FLOW;
 			cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			break;
 			case FLOW_LOW_FLOWRATE:
 			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"FLW",3);
-			NewAlarmId = _FLOW_LOW_FLOWRATE;
+		//	NewAlarmId = _FLOW_LOW_FLOWRATE;
 			Cl_Rinse_StopRinse();
 			cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			break;
 			case FLOW_HIGH_FLOWRATE:
-			NewAlarmId = _FLOW_HIGH_FLOWRATE;
+		//	NewAlarmId = _FLOW_HIGH_FLOWRATE;
 			Cl_Rinse_StopRinse();
 			cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			break;
 			case COND_STATUS_LOW:
 	//		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"COND_LOW",8);
-				NewAlarmId = _COND_STATUS_LOW;
+		//		NewAlarmId = _COND_STATUS_LOW;
 				Cl_Rinse_StopRinse();
 				cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			break;
 			case COND_STATUS_HIGH:
 			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"COND_HIGH",9);
-							NewAlarmId = _COND_STATUS_HIGH;
+				//			NewAlarmId = _COND_STATUS_HIGH;
 							Cl_Rinse_StopRinse();
 							cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			break;
 			case COND_DAC_OPEN:
 				// air trapped in DAC2 or no flow
 	//				 Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DAC_OPEN",8);
-					NewAlarmId = _COND_DAC_OPEN;
+				//	NewAlarmId = _COND_DAC_OPEN;
 					Cl_Rinse_StopRinse();
 					cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			break;
@@ -1210,44 +1274,45 @@ Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid)
 			break;
 			case 	UFP_OVERRUN:
 			case	UFP_UNDERRUN:
-					NewAlarmId = _UF_ALARM_FOR_RINSE;
+				//	NewAlarmId = _UF_ALARM_FOR_RINSE;
 					Cl_Rinse_StopRinse();
 					cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			break;
 			case 	BC_OVERRUN:
 			case	BC_UNDERRUN:
 			case	BC_FAILED:
-					NewAlarmId = _BC_ALARM;
+				//	NewAlarmId = _BC_ALARM;
 					Cl_Rinse_StopRinse();
 					cl_rinsestate = CL_RINSE_STATE_CRITICAL_ALARM;
 			break;
 
-			case DE_CHAMBER: //23
+			case DE_CHAMBER_LOW: //23
 			break;
 			case SYSTEM_NOT_READY: //24
 			break;
 			case POWER_FAILURE: //25
 			break;
-			case LEVEL_SWITCH_STOPPED:
-			NewAlarmId = _LEVEL_SWITCH_STOPPED;
-			break;
+	//		case LEVEL_SWITCH_LOW_TOGGLERATE:
+		//	NewAlarmId = _LEVEL_SWITCH_STOPPED;
+		//	break;
 			case LEVEL_SWITCH_LOW_TOGGLERATE:
-			NewAlarmId = _LEVEL_SWITCH_LOW_TOGGLERATE;
+		//	NewAlarmId = _LEVEL_SWITCH_LOW_TOGGLERATE;
 			break;
 			case LEVEL_SWITCH_HIGH_TOGGLERATE:
-			NewAlarmId = _LEVEL_SWITCH_HIGH_TOGGLERATE;
+		//	NewAlarmId = _LEVEL_SWITCH_HIGH_TOGGLERATE;
 			break;
 
 			case WATCHDOG_TIMER: //27
-				NewAlarmId = _WATCHDOG_TIMER;
+		//		NewAlarmId = _WATCHDOG_TIMER;
 			break;
 			default:
 			break;
 
 		}
-		 if(NewAlarmId != _NO_ALARM)
+		
+		 if(cl_rinsealarmid != _NO_ALARM)
 		 {
-			data[0] = (uint8_t)NewAlarmId;
+			data[0] = (uint8_t)cl_rinsealarmid;
 			data[1] = (uint8_t) CL_ALARM_TRIGGERED;
 			data[2] = (uint8_t)CRITICAL;
 			command = CON_TX_COMMAND_ALARM;
@@ -1286,7 +1351,7 @@ Cl_ReturnCodes  Cl_RinseStop(void)
 	Cl_ReturnCodes Cl_RetVal = CL_OK;
 	//sv_cntrl_setflowpath(FLOW_PATH_IDLE_RINSE);
 	Cl_bc_controller(BC_EVENT_STOP);
-	cl_rinsestate = CL_RINSE_STATE_POST_RINSE_STANDBY;
+	
 	sv_cntrl_poweroffheater();
 	return Cl_RetVal;
 	
@@ -1316,7 +1381,7 @@ Cl_ReturnCodes Cl_Rinse_SendRinseStateData(void)
 	
 	dataarray[0] = CLEAN_DATA;
 	count++;
-	Cl_SysStat_GetSensor_Status_Query(TEMP3STATUS_HIGH,&temp);
+	Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp);
 	//data.twobytedata = ts2;
 	
 	//temp = (0.805 * data.twobytedata) - 526 ;
@@ -1330,7 +1395,7 @@ Cl_ReturnCodes Cl_Rinse_SendRinseStateData(void)
 	//dataarray[count++] = data.bytedata[0];
 	//dataarray[count++] = data.bytedata[1];
 	
-			Cl_SysStat_GetSensor_Status_Query(TEMP3STATUS_HIGH,&temp);
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp);
 			{
 				
 				float ftemp,ftemp1;
@@ -1346,7 +1411,7 @@ Cl_ReturnCodes Cl_Rinse_SendRinseStateData(void)
 			}
 	
 		
-		Cl_SysStat_GetSensor_Status_Query(TEMP2STATUS_HIGH,&data.twobytedata);
+		Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP2STATUS,&data.twobytedata);
 		//data.twobytedata = ts2;
 		
 		//temp = (0.805 * data.twobytedata) - 526 ;
@@ -1401,20 +1466,7 @@ Cl_ReturnCodes Cl_Rinse_SendRinseStateData(void)
 		
 		Cl_rinseretcode = Cl_SendDatatoconsole(CON_TX_COMMAND_SYS_STATE_DATA,&dataarray,count);
 		
-		
-		
-	//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"COND",4);
-	//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&data.twobytedata,2);
-		
-						
-		Cl_SysStat_GetSensor_Status_Query(COND_DAC_RO,&data.twobytedata);
-		//data.twobytedata = ts2;
-						
-		//temp = (0.805 * data.twobytedata) - 526 ;
-		temp = (0.8056 * data.twobytedata) ;
 
-		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"VOLT_DAC",8);
-	//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
 }
 
 void Cl_Rinse_100msTMP(void)
@@ -1449,7 +1501,7 @@ void Cl_Rinse_100msTMP(void)
 	//#endif
 	
 	//cl_testgetsensordata(PS1STATUS_HIGH,&Ps1);
-	Cl_SysStat_GetSensor_Status_Query(PS1STATUS_HIGH,&Ps1);
+	Cl_SysStat_GetSensor_Status_Query(SENSOR_PS1STATUS,&Ps1);
 	sensordatamillivolts = ((Ps1* 3300 /4096) ) ;
 	Pressuredatainmillibars =  ((sensordatamillivolts - 860)/0.78 ) ;
 	if (  sensordatamillivolts < 1360 )
@@ -1465,7 +1517,7 @@ void Cl_Rinse_100msTMP(void)
 	ps1avg = ((ps1avg* 9) + ps1Pressuredatainmillibars) /10;
 	
 	//cl_testgetsensordata(PS2STATUS_HIGH,&Ps2);
-	Cl_SysStat_GetSensor_Status_Query(PS2STATUS_HIGH, &Ps2);
+	Cl_SysStat_GetSensor_Status_Query(SENSOR_PS2STATUS, &Ps2);
 	sensordatamillivolts = ((Ps2* 3300 /4096) ) ;
 	Pressuredatainmillibars =  ((sensordatamillivolts - 860)/0.78 ) ;
 	if (  sensordatamillivolts < 1360 )
@@ -1479,7 +1531,7 @@ void Cl_Rinse_100msTMP(void)
 	ps2Pressuredatainmillibars = Pressuredatainmillibars;
 	ps2avg = ((ps2avg* 9) + ps2Pressuredatainmillibars) /10;
 	
-	Cl_SysStat_GetSensor_Status_Query(PS3STATUS_HIGH, &Ps3);
+	Cl_SysStat_GetSensor_Status_Query(SENSOR_PS3STATUS, &Ps3);
 	sensordatamillivolts = ((Ps3* 3300 /4096) ) ;
 	//Pressuredatainmillibars =  (sensordatamillivolts/1.485 ) ;
 	Pressuredatainmillibars = (sensordatamillivolts - 1.1)/1.1;
@@ -1489,14 +1541,14 @@ void Cl_Rinse_100msTMP(void)
 	//ps3avg = Ps3;
 	
 	//cl_testgetsensordata(APTSTATUS_HIGH,&Atp);
-	Cl_SysStat_GetSensor_Status_Query(APTSTATUS_HIGH, &Atp);
+	Cl_SysStat_GetSensor_Status_Query(SENSOR_APTSTATUS, &Atp);
 	sensordatamillivolts = ((Atp* 3300 /4096) ) ;
 	Pressuredatainmillibars = (sensordatamillivolts - 1640)/0.6;
 	aptPressuredatainmillibars = Pressuredatainmillibars;  // - 1000;
 	//Atp = Pressuredatainmillibars;
 	aptavg = (( aptavg *9) + aptPressuredatainmillibars) /10;
 	//cl_testgetsensordata(VPTSTATUS_HIGH,&Vtp);
-	Cl_SysStat_GetSensor_Status_Query(VPTSTATUS_HIGH, &Vtp);
+	Cl_SysStat_GetSensor_Status_Query(SENSOR_VPTSTATUS, &Vtp);
 	sensordatamillivolts = ((Vtp* 3300 /4096) ) ;
 	Pressuredatainmillibars = (sensordatamillivolts - 1640)/0.6;
 	vptPressuredatainmillibars = Pressuredatainmillibars;  // - 1000;
@@ -1547,7 +1599,7 @@ Cl_ReturnCodes Cl_Rinse_StartRinse(void)
 				uint8_t data = 0;
 					
 				//Check for  rinse readiness and alarm status
-					
+				
 				Cl_RinseFlowOn();
 				//	Cl_rinseretcode = sv_cntrl_setflowpath(BC_FLUSH_OPEN); // sanjeer BC_NEW
 				Cl_rinseretcode =  sv_cntrl_activatepump(DCMOTOR1);
@@ -1561,22 +1613,18 @@ Cl_ReturnCodes Cl_Rinse_StartRinse(void)
 				Cl_rinseretcode = Cl_bc_controller(BC_EVENT_START);
 				//sv_prop_startmixing();
 				// sv_prop_startpropeo_aligning();
-				
+			
 				if(Cl_rinseretcode == CL_OK)
 				{
-					command = CON_TX_COMMAND_RINSE_CONFIRM;
-					data = (uint8_t)COMMAND_RESULT_SUCCESS;
-					Cl_rinseretcode = Cl_SendDatatoconsole(command,&data,1);
+					
+
 					//Reset the  OPENFILL time count
 					Cl_RinseMinutescounter = 0;
 					Cl_RinseTotalMinutescounter = 0;
 					Cl_RinseOpenFillTimeOut = false;
 
 					
-					
-					command = CON_TX_COMMAND_RINSE_STARTED;
-					Cl_rinseretcode = Cl_SendDatatoconsole(command,&data,0);
-					Cl_rinseretcode = Cl_Rinse_UpdateTimeInfo();
+
 					
 					Cl_rinseretcode =  cl_flow_switchcontroller(FLOW_SWITCH_CNTRLER_EVENT_START);
 					Cl_Rinse_ResetAlertsforReassertion();
@@ -1585,32 +1633,34 @@ Cl_ReturnCodes Cl_Rinse_StartRinse(void)
 					Cl_rinseretcode =  Cl_AlarmConfigureAlarmType(HOLDER2STATUS_OPEN,LOGIC_HIGH,0,0,0);
 					Cl_rinseretcode =  Cl_AlarmConfigureAlarmType(LEVELSWITCH_OFF_TO_ON,LOGIC_LOW,0,0,0);
 					Cl_rinseretcode =  Cl_AlarmConfigureAlarmType(LEVELSWITCH_ON_TO_OFF,LOGIC_HIGH,0,0,0);
-					Cl_rinseretcode =  Cl_AlarmConfigureAlarmType(FLOWSTATUS_FLOWON,LOGIC_HIGH,0,0,0);
-					Cl_rinseretcode =  Cl_AlarmConfigureAlarmType(FLOWSTATUS_FLOWOFF,LOGIC_LOW,0,0,0);
+					Cl_rinseretcode =  Cl_AlarmConfigureAlarmType(FLOW_LOW_FLOWRATE,0,0,0,0);
+					Cl_rinseretcode =  Cl_AlarmConfigureAlarmType(FLOW_NO_FLOW,0,0,0,0);
 					
 					Cl_rinseretcode =  Cl_AlarmActivateAlarms(BLOODDOOR_STATUS_OPEN,true );
 					Cl_rinseretcode =  Cl_AlarmActivateAlarms(HOLDER1STATUS_OPEN,true );
 					Cl_rinseretcode =  Cl_AlarmActivateAlarms(HOLDER2STATUS_OPEN,true );
 					Cl_rinseretcode =  Cl_AlarmActivateAlarms(LEVELSWITCH_OFF_TO_ON,true );
 					Cl_rinseretcode =  Cl_AlarmActivateAlarms(LEVELSWITCH_ON_TO_OFF,true );					
-					Cl_rinseretcode =  Cl_AlarmActivateAlarms(FLOWSTATUS_FLOWON,true );
-					Cl_rinseretcode =  Cl_AlarmActivateAlarms(FLOWSTATUS_FLOWOFF,true );					
+					Cl_rinseretcode =  Cl_AlarmActivateAlarms(FLOW_LOW_FLOWRATE,true );
+					Cl_rinseretcode =  Cl_AlarmActivateAlarms(FLOW_NO_FLOW,true );					
 				//	Cl_rinseretcode =  Cl_AlarmActivateAlarms(FLOW_LOW_FLOWRATE,true );
 				//	Cl_rinseretcode =  Cl_AlarmActivateAlarms(FLOW_HIGH_FLOWRATE,true );
 					Cl_rinseretcode =  Cl_AlarmActivateAlarms(COND_STATUS_HIGH,true );
 					//Cl_rinseretcode =  Cl_AlarmActivateAlarms(COND_STATUS_LOW,true );
-					Cl_rinseretcode =  Cl_AlarmActivateAlarms(PS2STATUS_HIGH,true );
-					Cl_rinseretcode =  Cl_AlarmActivateAlarms(PS1STATUS_HIGH,true );
+					Cl_rinseretcode =  Cl_AlarmActivateAlarms(PS2_HIGH_THRESHOLD,true );
+					Cl_rinseretcode =  Cl_AlarmActivateAlarms(PS1_HIGH_THRESHOLD,true );
 					
 
 					
 
 					
 					
-					Cl_rinseretcode =  Cl_AlarmActivateAlarms(TEMP3STATUS_HIGH,true );
-					Cl_rinseretcode =  Cl_AlarmActivateAlarms(TEMP3STATUS_LOW,true );
-					Cl_rinseretcode =  Cl_AlarmActivateAlarms(TEMP2STATUS_HIGH,true );
-					
+					Cl_rinseretcode =  Cl_AlarmActivateAlarms(TEMP3_HIGH_THRESHOLD,true );
+					Cl_rinseretcode =  Cl_AlarmActivateAlarms(TEMP3_LOW_THRESHOLD,true );
+					Cl_rinseretcode =  Cl_AlarmActivateAlarms(TEMP2_HIGH_THRESHOLD,true );
+					Cl_rinseretcode =  Cl_AlarmActivateAlarms(TEMP2_LOW_THRESHOLD,true );
+					Cl_rinseretcode =  Cl_AlarmActivateAlarms(TEMP1_HIGH_THRESHOLD,true );
+					Cl_rinseretcode =  Cl_AlarmActivateAlarms(TEMP1_LOW_THRESHOLD,true );
 					
 					//Cl_rinseretcode =  Cl_AlarmActivateAlarms(PS1STATUS_HIGH,true );
 					//Cl_rinseretcode =  Cl_AlarmActivateAlarms(PS2STATUS_HIGH,true );
@@ -1633,9 +1683,9 @@ Cl_ReturnCodes Cl_Rinse_StartRinse(void)
 						//			Cl_rinseretcode =  Cl_AlarmActivateAlarms( PS3STATUS_HIGH,true );
 					}
 											
-					cl_rinsestate = Cl_Rinse_ResetAlertsforReassertion();
+					Cl_rinseretcode = Cl_Rinse_ResetAlertsforReassertion();
 					//Cl_rinseretcode = SetHeaterState(CL_HEATER_STATE_START);
-					cl_rinsestate = CL_RINSE_STATE_RINSING;
+					
 
 					
 				}
@@ -1647,8 +1697,8 @@ Cl_ReturnCodes Cl_Rinse_StopRinse(void)
 				if(!((cl_rinsestate == CL_RINSE_STATE_IDLE ) || (cl_rinsestate == CL_RINSE_STATE_STOPPED ) ||(cl_rinsestate == CL_RINSE_STATE_CRITICAL_ALARM )  ))
 				{
 					
-					Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DOOR",4);
-					sv_cntrl_activatevenousclamp();
+				//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DOOR",4);
+				sv_cntrl_activatevenousclamp();
 				Cl_Rinsesecondscounter = 0;
 				Cl_RinseMinutescounter = 0;
 				Cl_RinseTotalMinutescounter = 0;

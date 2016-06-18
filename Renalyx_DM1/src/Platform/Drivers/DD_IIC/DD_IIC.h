@@ -16,6 +16,20 @@ typedef enum
 	DD_POT_MAX
 	};
 
+typedef struct
+{
+	uint8_t command;
+	uint8_t len;
+	bool pending;
+	
+}IIC_PROPO_CommandType;
+typedef struct
+{
+	uint8_t command;
+	uint8_t len;
+	bool pending;
+	
+}IIC_BP_CommandType;
 
 void DD_INIT_IIC(void);
 void DD_READ_IIC(uint8_t iic_address, uint16_t* data);

@@ -14,7 +14,7 @@
 #include "cl_app/cl_alarms/inc/cl_alarmdetector.h"
 #include "cl_app/cl_cal/calibration.h"
 
-extern Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_AlarmIdType cl_alarm_id , bool cl_status);
+extern Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_NewAlarmIdType cl_alarm_id , bool cl_status);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 extern uint8_t sv_cntrl_deactivate_valve(sv_valvetype );
 #if 0
@@ -58,9 +58,10 @@ extern volatile float temprature_final_value_1,temprature_final_value_2,tempratu
 extern volatile int16_t pressure_final_apt,pressure_final_vpt,pressure_final_ps1,pressure_final_ps2,pressure_final_ps3;
 uint16_t valve_4_count = 0;
 extern bool syncdone;
+extern float long_avg_duty;
 extern float dummy1,dummy2,dummy3,dummy4,dummy5,dummy6,dummy7;
 
-Cl_ReturnCodes 		Cl_SysStat_GetSensor_Status_Query(Cl_AlarmIdType , uint16_t*);
+Cl_ReturnCodes 		Cl_SysStat_GetSensor_Status_Query(Cl_SensorDeviceIdType , uint16_t*);
 void Cl_SysStat_mean_status_update_mean_status_update(void);
 
 
@@ -198,7 +199,7 @@ Cl_ReturnCodes 		Cl_SysStat_System_Status_Query(void)
 }
 
 
-Cl_ReturnCodes 		Cl_SysStat_GetSensor_Status_Query(Cl_AlarmIdType dataID, uint16_t* pdata)
+Cl_ReturnCodes 		Cl_SysStat_GetSensor_Status_Query(Cl_SensorDeviceIdType dataID, uint16_t* pdata)
 {
 	
 	Cl_ReturnCodes RetVal;
@@ -206,87 +207,82 @@ Cl_ReturnCodes 		Cl_SysStat_GetSensor_Status_Query(Cl_AlarmIdType dataID, uint16
 	
 		switch(dataID)
 		{
-			case HOLDER1STATUS_OPEN:
+			case SENSOR_HOLDER1STATUS:
 			tempdata =  cl_sys_statbuffer.holder1status;
 			*pdata  = tempdata;
 			break;
-			case HOLDER2STATUS_OPEN:
+			case SENSOR_HOLDER2STATUS:
 			tempdata =  cl_sys_statbuffer.holder2status;
 			*pdata  = tempdata;
 			break;
-			case LEVELSWITCH_OFF_TO_ON:
+			case SENSOR_LEVELSWITCH:
 			tempdata =  cl_sys_statbuffer.levelswitch1;
 			*pdata  = tempdata;
 			break;
-			case LEVELSWITCH_ON_TO_OFF:
-			tempdata =  cl_sys_statbuffer.levelswitch1;
-			*pdata  = tempdata;
-			break;
-			case COND_STATUS_HIGH:
+
+			case SENSOR_COND_STATUS:
 			tempdata =  cl_sys_statbuffer.cond_status;
 			*pdata  = tempdata;
 			break;
-			case COND_DAC_RO:
+			case  SENSOR_COND_WIEN_STATUS:
+			tempdata =  cl_sys_statbuffer.cond_wien_status;
+			*pdata  = tempdata;
+			break;
+			case SENSOR_COND_DAC:
 			tempdata =  cl_sys_statbuffer.cond_status_dac;
 			*pdata  = tempdata;
 			break;
-			case FPCURRENTSTATUS:
+			case SENSOR_FPCURRENTSTATUS:
 			tempdata =  cl_sys_statbuffer.FPcurrentstatus;
 			*pdata  = tempdata;
 			break;
-			case DGPCURRENTSTATUS:
-			tempdata =  cl_sys_statbuffer.DGPcurrentstatus;
-			*pdata  = tempdata;
-			break;
-			case UF_ROTATION_MARKER:
+
+			case SENSOR_UFP_FB:
 			tempdata =  cl_sys_statbuffer.UFPstatus;
 			*pdata  = tempdata;
 			break;
-			case ABDSTATUS_ON:
+			case SENSOR_ABDSTATUS:
 			tempdata =  cl_sys_statbuffer.abdstatus;
 			*pdata  = tempdata;
 			break;
-			case BDSTATUS_ON:
+			case SENSOR_BDSTATUS:
 			tempdata =  cl_sys_statbuffer.bdstatus;
 			*pdata  = tempdata;
 			break;
-			case APTSTATUS_HIGH:
+			case SENSOR_APTSTATUS:
 			tempdata =  cl_sys_statbuffer.aptstatus;
 			*pdata  = tempdata;
 			break;
-			case VPTSTATUS_HIGH:
+			case SENSOR_VPTSTATUS:
 			tempdata =  cl_sys_statbuffer.vptstatus;
 			*pdata  = tempdata;
 			break;
-			case BLDSTATUS_ON:
+			case SENSOR_BLDSTATUS:
 			tempdata =  cl_sys_statbuffer.bldstatus;
 			*pdata  = tempdata;
 			break;
-			case PS1STATUS_HIGH:
+			case SENSOR_PS1STATUS:
 			tempdata =  cl_sys_statbuffer.ps1status;
 			*pdata  = tempdata;
 			break;
-			case PS2STATUS_HIGH:
+			case SENSOR_PS2STATUS:
 			tempdata =  cl_sys_statbuffer.ps2status;
 			*pdata  = tempdata;
 			break;
-			case PS3STATUS_HIGH:
+			case SENSOR_PS3STATUS:
 			tempdata =  cl_sys_statbuffer.ps3status;
 			*pdata  = tempdata;
 			break;
-			case PS4STATUS:
-			tempdata =  cl_sys_statbuffer.ps4status;
-			*pdata  = tempdata;
-			break;
-			case TEMP1STATUS_HIGH:
+
+			case SENSOR_TEMP1STATUS:
 			tempdata =  cl_sys_statbuffer.Temp1status;
 			*pdata  = tempdata;
 			break;
-			case TEMP2STATUS_HIGH:
+			case SENSOR_TEMP2STATUS:
 			tempdata =  cl_sys_statbuffer.Temp2status;
 			*pdata  = tempdata;
 			break;
-			case TEMP3STATUS_HIGH:
+			case SENSOR_TEMP3STATUS:
 			tempdata =  cl_sys_statbuffer.Temp3status;
 			*pdata  = tempdata;
 			break;
@@ -294,28 +290,28 @@ Cl_ReturnCodes 		Cl_SysStat_GetSensor_Status_Query(Cl_AlarmIdType dataID, uint16
 			tempdata =  cl_sys_statbuffer.Temp4status;
 			*pdata  = tempdata;
 			break;
-			case 	HP_START:
+			case 	SENSOR_HP_START:
 			tempdata =  cl_sys_statbuffer.Heparin_full_marker;
 			*pdata  = tempdata;
 			break;
-			case HP_END:
+			case SENSOR_HP_END:
 			tempdata =  cl_sys_statbuffer.Heparin_empty_marker;
 			*pdata  = tempdata;
 			break;
-			case HP_ROTATION_MARKER:
+			case SENSOR_HP_FB:
 			tempdata =  cl_sys_statbuffer.Heparin_rotation_marker;
 			*pdata  = tempdata;
 			break;
-			case BP_ROTATION_MARKER:
+			case SENSOR_BP_FB:
 			tempdata =  cl_sys_statbuffer.BPstatus;
 			*pdata  = tempdata;
 			break;
-			case FLOWSTATUS_FLOWON:
-			case FLOWSTATUS_FLOWOFF:
+			case SENSOR_FLOW_SWITCH:
+			
 			tempdata =  cl_sys_statbuffer.Flowstatus;
 			*pdata  = tempdata;
 			break;
-			case BLOODDOOR_STATUS_OPEN:
+			case SENSOR_BLOODDOOR_STATUS:
 			tempdata =  cl_sys_statbuffer.BPstatus;
 			*pdata  = tempdata;
 			break;
@@ -361,7 +357,7 @@ void Cl_SysStat_mean_status_update(void)
 		if(syncdone)
 		{
 			//cl_testgetsensordata(TEMP1STATUS_HIGH,&sensordata);
-			Cl_SysStat_GetSensor_Status_Query(TEMP1STATUS_HIGH, &sensordata);
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP1STATUS, &sensordata);
 			{
 				
 				/*float temp,temp1;
@@ -377,6 +373,8 @@ void Cl_SysStat_mean_status_update(void)
 				temp = sensordata * 0.805;
 				calibration_tmp(temp,TS1);
 				avgtmp1 =	(avgtmp1*5 + temprature_final_value_1)/6;
+				//temp1 = 1.830098345 * temp *temp +  22.62524406 *temp + 0.581851503  ;
+				//avgtmp1 =	(avgtmp1*5 + temp1)/6;
 				bulk_data[0] = avgtmp1*10;
 				
 				//		cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT,&cl_tdata,4);
@@ -385,7 +383,7 @@ void Cl_SysStat_mean_status_update(void)
 
 			
 			
-			Cl_SysStat_GetSensor_Status_Query(TEMP2STATUS_HIGH,&sensordata);
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP2STATUS,&sensordata);
 			{
 				
 				/*float temp,temp1;
@@ -402,10 +400,12 @@ void Cl_SysStat_mean_status_update(void)
 				temp = sensordata * 0.805;
 				calibration_tmp(temp,TS2);
 				avgtmp2 =	(avgtmp2*5 + temprature_final_value_2)/6;
+			//	temp1 = 1.830098345 * temp *temp +  22.62524406 *temp + 0.581851503  ;
+			//	avgtmp2 =	(avgtmp2*5 + temp1)/6;
 				bulk_data[1] = avgtmp2*10;
 				//		cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT,&cl_tdata,4);
 			}
-			Cl_SysStat_GetSensor_Status_Query(TEMP3STATUS_HIGH,&sensordata);
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&sensordata);
 			{
 				
 				/*float temp,temp1;
@@ -433,6 +433,8 @@ void Cl_SysStat_mean_status_update(void)
 				temp = sensordata * 0.805;
 				calibration_tmp(temp,TS3);
 				avgtmp3 =(avgtmp3*5 + temprature_final_value_3)/6;
+			//	temp1 = 1.830098345 * temp *temp +  22.62524406 *temp + 0.581851503  ;
+			//	avgtmp3 =(avgtmp3*5 + temp1)/6;
 				bulk_data[2] = avgtmp3*10;
 				//	cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT,&cl_tdata,4);
 			}
@@ -498,8 +500,8 @@ void Cl_SysStat_mean_status_update(void)
 					}
 					else
 					{
-						//avgcond = dummy1;
-						avgcond=100;
+						avgcond = dummy1;
+						//avgcond=100;
 					}
 					
 					cl_tdata.word = 0;
@@ -508,7 +510,7 @@ void Cl_SysStat_mean_status_update(void)
 					bulk_data[3] = avgcond;
 			//		cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT,&cl_tdata,4);
 			}
-			Cl_SysStat_GetSensor_Status_Query(FLOWSTATUS_FLOWON,&sensordata);
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_FLOW_SWITCH,&sensordata);
 			{
 
 				cl_tdata.word = 0;
@@ -575,7 +577,7 @@ void Cl_SysStat_mean_status_update(void)
 			cl_tdata.bytearray[2] = 15;
 			bulk_data[6] = cl_tdata.Twobyte;
 			
-			Cl_SysStat_GetSensor_Status_Query(PS3STATUS_HIGH,&Ps3);
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_PS3STATUS,&Ps3);
 			/*sensordatamillivolts = ((Ps3* 3300 /4096) ) ;
 			Pressuredatainmillibars =  (sensordatamillivolts * 0.892) - 1004  ;
 			ps3avg = ((ps3avg* 19) + Pressuredatainmillibars) /20;
@@ -609,7 +611,7 @@ void Cl_SysStat_mean_status_update(void)
 	//		cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT,&cl_tdata,4);
 			/////////////////
 			
-			Cl_SysStat_GetSensor_Status_Query(PS2STATUS_HIGH,&Ps2);
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_PS2STATUS,&Ps2);
 		/*	sensordatamillivolts = ((Ps2* 3300 /4096) ) ;
 			Pressuredatainmillibars =  (sensordatamillivolts * 0.892) - 1004  ;
 			ps2avg = ((ps2avg* 4) + Pressuredatainmillibars) /5;*/
@@ -626,7 +628,7 @@ void Cl_SysStat_mean_status_update(void)
 		//	cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT,&cl_tdata,4);
 			
 			
-			Cl_SysStat_GetSensor_Status_Query(PS1STATUS_HIGH,&Ps1);
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_PS1STATUS,&Ps1);
 			/*sensordatamillivolts = ((Ps1* 3300 /4096) ) ;
 			Pressuredatainmillibars =  (sensordatamillivolts * 0.892) - 1004  ;
 			ps1avg = ((ps1avg* 4) + Pressuredatainmillibars) /5;*/
@@ -681,8 +683,10 @@ void Cl_SysStat_mean_status_update(void)
 		//	bulk_data[7] = 107;
 		//	bulk_data[8] = 108;
 		//	bulk_data[9] = 109;
+		
 
-		cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_BULK_PRINT,&bulk_data,20);
+
+	//	cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_BULK_PRINT,&bulk_data,20);
 		}
 		
 	}

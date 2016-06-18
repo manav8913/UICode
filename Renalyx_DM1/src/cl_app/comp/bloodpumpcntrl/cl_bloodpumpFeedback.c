@@ -10,7 +10,7 @@
 #include "inc/cl_bloodpumpFeedback.h"
 #include "cl_app/inc/cl_types.h"
 
-extern Cl_ReturnCodes Cl_SysStat_GetSensor_Status_Query(Cl_AlarmIdType, uint16_t*);
+extern Cl_ReturnCodes Cl_SysStat_GetSensor_Status_Query(Cl_SensorDeviceIdType, uint16_t*);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 
 
@@ -58,7 +58,7 @@ Cl_ReturnCodes cl_bp_pumpFeedback_timer(void) // 5 ms clock
 {
 	//cl_Datastreamtype cl_data;
 	//cl_testgetsensordata(BP_ROTATION_MARKER,&bp_rotataion_marker);
-	Cl_SysStat_GetSensor_Status_Query(BP_ROTATION_MARKER, &bp_rotataion_marker);
+	Cl_SysStat_GetSensor_Status_Query(SENSOR_BP_FB, &bp_rotataion_marker);
 
 	fivemscounter++;
 	if((cl_bp_pump_state ==  CL_BP_P_STATE_STARTED) && (bp_rotation_counter > 2))

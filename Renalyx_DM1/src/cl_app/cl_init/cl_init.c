@@ -9,10 +9,14 @@
 #include "cl_app/cl_mac/inc/cl_mac_controller.h"
 #include "cl_app/cl_console/inc/cl_consolecontroller.h"
 #include "cl_app/inc/cl_types.h"
+#include "cl_app\cl_status\comp\inc\Cl_Conductivity_Sensors.h"
+
+
 Cl_ReturnCodes  Cl_Init_Controller(MAC_EVENTS Cl_MacInitEvent);
 Cl_ReturnCodes  cl_init_translatemacevent(MAC_EVENTS ,Cl_Init_Events* );
 extern Cl_ReturnCodes Cl_mac_apprequesthandler(MAC_EVENTS);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
+extern Cl_ReturnCodes  Cl_Conductivity_Sensor_Controller(Cl_CondSensor_EventType Cl_cond_Event);
 
 extern Cl_Mac_EventType Cl_MacEvent1;
 
@@ -79,6 +83,9 @@ Cl_ReturnCodes  Cl_Init_Controller(MAC_EVENTS Cl_MacInitEvent)
 						data[0] = CL_INIT_READY;
 						command = CON_TX_COMMAND_INIT_DONE;
 						Cl_initcode = Cl_SendDatatoconsole(command,&data,0);
+						
+						
+						Cl_initcode =  Cl_Conductivity_Sensor_Controller(COND_EVENT_INIT);
 							
 						break;
 						default:break;

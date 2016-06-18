@@ -7,19 +7,19 @@
 #include "cl_app/inc/cl_types.h"
 #include "inc/Cl_bc_controller.h"
 #include "Platform/Service/sv_interface.h"
-#include "cl_app/cl_heatcntrl/inc/cl_heatercontroller.c.h"
+#include "cl_app/cl_heatcntrl/inc/cl_heatercontroller.h"
 #include "cl_app/cl_alarms/inc/cl_alarmdetector.h"
 #include "cl_app/cl_console/inc/cl_consolecontroller.h"
 #include "cl_app/cl_testharness/inc/cl_th.h"
 #include "cl_app/cl_mac/inc/cl_mac_controller.h"
 
 extern Cl_ReturnCodes Cl_mac_apprequesthandler(MAC_EVENTS);
-extern Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_AlarmIdType cl_alarm_id , bool cl_status);
+extern Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_NewAlarmIdType cl_alarm_id , bool cl_status);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 
 extern uint8_t sv_cntrl_setflowpath(sv_flowpathtype);
 extern void sv_prop_startmixing();
-extern Cl_ReturnCodes SetHeaterState(RinseHeaterStateType Param_HeaterState);
+extern Cl_ReturnCodes SetHeaterState(HeaterStateType Param_HeaterState);
 extern uint8_t sv_cntrl_setpumpspeed(sv_pumptype sv_pump_id,uint32_t speed);
 extern uint8_t sv_cntrl_activate_valve(sv_valvetype );
 extern uint8_t sv_cntrl_deactivate_valve(sv_valvetype );
@@ -309,7 +309,7 @@ Cl_ReturnCodes  Cl_bc_controller(Cl_BC_EventType cl_bc_event)
 							switch(cl_bc_event)
 							{
 								case BC_EVENT_50MS:
-		
+								fill_time++;
 								if(wait_counter < 20)
 								{
 									if(wait_counter == 2)
@@ -317,7 +317,7 @@ Cl_ReturnCodes  Cl_bc_controller(Cl_BC_EventType cl_bc_event)
 										sv_cntrl_deactivate_valve(VALVE_ID19);
 									}
 									wait_counter ++;	// 1 sec wait
-									fill_time++;
+									
 								}
 								else
 								{
@@ -368,7 +368,7 @@ Cl_ReturnCodes  Cl_bc_controller(Cl_BC_EventType cl_bc_event)
 							switch(cl_bc_event)
 							{
 								case BC_EVENT_50MS:
-								
+								fill_time++;
 								if(wait_counter < 20)
 								{
 									if(wait_counter == 2)
@@ -377,7 +377,7 @@ Cl_ReturnCodes  Cl_bc_controller(Cl_BC_EventType cl_bc_event)
 									}
 									
 									wait_counter ++;	// 1 sec wait
-									fill_time++;
+									
 								}
 								else
 								{
@@ -400,7 +400,7 @@ Cl_ReturnCodes  Cl_bc_controller(Cl_BC_EventType cl_bc_event)
 								case 	BC_EVENT_500MS:
 								break;
 								case	BC_EVENT_SECOND:
-								fill_time++;
+								
 								break;
 								case	BC_EVENT_CS:
 								 current_sense = true;

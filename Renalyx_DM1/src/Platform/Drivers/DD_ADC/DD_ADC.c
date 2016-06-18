@@ -26,7 +26,6 @@ uint16_t DD_READ_ADC( uint8_t channel_number)
 	//ADC->ADC_CR = 0x00000001;
 	ADC->ADC_CR = 0x00000002;
 
-
 	
 	//	while ((ADC->ADC_ISR & (1<<channel_number)) !=  (1<<channel_number)); // do nothing
 		while( (ADC->ADC_ISR) & (1<<channel_number) == 0); // do nothing

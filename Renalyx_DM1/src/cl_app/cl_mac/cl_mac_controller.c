@@ -27,7 +27,7 @@
 #define NVRAM_MEM_ADDR       0x0002        //!< TWI slave memory address
 
 #define DIPOT_BUS_ADDR       0x2C        //!< TWI slave bus address (digital pot)
-#define TWI_SPEED            100000       //!< TWI data transfer rate(100Khz)
+#define TWI_SPEED            1000000       //!< TWI data transfer rate(100Khz)
 #define TWI_EXAMPLE TWI0
 #define PATTERN_TEST_LENGTH     sizeof(testpattern)
 #define PATTERN_TEST_LENGTH     sizeof(testpattern)
@@ -98,7 +98,7 @@ extern  Cl_ReturnCodes        Cl_Console_Read_Message_Ready_Status(void); // Rea
 extern  Cl_ReturnCodes		 Cl_Console_Read_ConsoleMessage_Status(void);
 extern  Cl_ReturnCodes 		 Cl_Console_Console_Sync(void);
 extern	Cl_ReturnCodes		 Cl_Console_init(void);
-extern  Cl_ReturnCodes		 Cl_dinf_init(void);
+extern  Cl_ReturnCodes		 Cl_disinf_init(void);
 extern	Cl_ReturnCodes		 Cl_dlsis_init(void);
 extern  Cl_ReturnCodes		 Cl_dprep_init(void);
 extern	Cl_ReturnCodes		 Cl_rinse_init(void);
@@ -122,6 +122,7 @@ extern		  Cl_ReturnCodes	 Cl_Dlsis_controller(MAC_EVENTS);
 extern		  Cl_ReturnCodes	 Cl_dprep_controller(MAC_EVENTS);
 extern		  Cl_ReturnCodes	 Cl_ConsoleStateHandler(MAC_EVENTS );
 extern		  Cl_ReturnCodes     Cl_Init_Controller(MAC_EVENTS);
+extern        Cl_ReturnCodes Cl_disinf_controller(MAC_EVENTS Cl_MacDisinfEvent);
 extern        Cl_ReturnCodes    cl_console_proto_init(void);
 extern uint8_t sv_cntrl_poweronheater(void);
 extern void Cl_SysStat_mean_status_update(void);
@@ -129,8 +130,7 @@ extern void DD_IIC_CONSOLE_SEND(uint8_t iic_address, uint8_t* data,uint8_t lengt
 
 
 int main(void)
-
-		   {
+					   {
 		board_init();
 		sysclk_init();
 	
@@ -285,32 +285,7 @@ PIOA->PIO_ABSR = 0x00090000;
 		{
 			
 			Cl_MacRetval = cl_event_handler(Cl_MacEvent);
-				#if 0		
-				if(Cl_MacEvent == EVT_TICK_2M)
-						{
-							
-							static uint8_t status = 0;
-							if(status == 0)
-							{
-								sv_cntrl_activatepump(BLOODPUMP);
-								status = 1;
-							}
-							else
-							{
-								sv_cntrl_deactivatepump(BLOODPUMP);
-								status = 0;
-							}
-							Cl_MacEvent = EVT_NULL;
-							
-						}
-						else
-						{
-							Cl_MacEvent = EVT_NULL;
-							
-						}
-						continue;
-						
-						#endif
+
 #if 0			
 
 			if(Cl_MacEvent == EVT_TICK_SEC)
@@ -406,6 +381,7 @@ PIOA->PIO_ABSR = 0x00090000;
 						Cl_MacRetval = Cl_Standby_Controller(EVT_COMMAND_ENTER_STANDBY);
 						Cl_MacEvent = EVT_NULL;
 							Cl_MacState =   MAC_STANDBY;
+							Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_STANDBY,1);
 						break;
 						case EVT_TICK_100M:	
 						case EVT_TICK_SEC:
@@ -434,15 +410,15 @@ PIOA->PIO_ABSR = 0x00090000;
 						case EVT_TICK_HOUR:			
 						case EVT_ALERT_TRIGGERED:	
 						case EVT_ALARM_TRIGGERED:
-						case EVT_CONSOLE_COMMAND_GET_DATA:
-						case EVT_CONSOLE_COMMAND_SET_DATA:
+					//	case EVT_CONSOLE_COMMAND_GET_DATA:
+					//	case EVT_CONSOLE_COMMAND_SET_DATA:
 						
 							Cl_MacRetval = Cl_Standby_Controller(Cl_MacEvent);
 							Cl_MacEvent = EVT_NULL;
 							break;
 
 						case EVT_CONSOLE_COMMAND_RINSE_START:
-						loopcountinsec = 0;
+							loopcountinsec = 0;
 							Cl_MacRetval = Cl_Standby_Controller(Cl_MacEvent);
 							if(Cl_MacRetval == CL_OK)
 							{
@@ -452,10 +428,19 @@ PIOA->PIO_ABSR = 0x00090000;
 							if( Cl_MacRetval == CL_OK)
 							{
 								Cl_MacState = MAC_RINSE;
+								Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_RINSE,1);
 								//Cl_MacState = MAC_POST_RINSE_STANDBY;
 							}
 							Cl_MacEvent = EVT_NULL;
 						break;
+						case EVT_CONSOLE_COMMAND_DISINF_START:
+						
+						Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
+						Cl_MacRetval = Cl_disinf_controller(Cl_MacEvent);
+							Cl_MacState = MAC_DISINFECT;
+								Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_DISINFECT,1);
+						break;
+						
 						case EVT_CONSOLE_COMMAND_DIALYSIS_PREP:
 										
 							Cl_MacRetval = Cl_Standby_Controller(Cl_MacEvent);
@@ -472,6 +457,7 @@ PIOA->PIO_ABSR = 0x00090000;
 							if( Cl_MacRetval == CL_OK)
 							{
 								Cl_MacState = MAC_DPREP;
+									Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_DPREP,1);
 							}
 							Cl_MacEvent = EVT_NULL;
 							
@@ -482,11 +468,54 @@ PIOA->PIO_ABSR = 0x00090000;
 						default: break;
 					}
 					break;
+					case MAC_DISINFECT:
+					
+					switch(Cl_MacEvent)
+					{
+						
+						
+						case EVT_TICK_50M:
+						case EVT_TICK_100M:
+						case EVT_TICK_500M:
+						case EVT_TICK_SEC:
+						case EVT_TICK_MIN:
+						Cl_MacRetval = Cl_disinf_controller(Cl_MacEvent);
+						Cl_MacRetval = Cl_Rinse_Controller(Cl_MacEvent);
+						break;
+						case EVT_CONSOLE_COMMAND_DISINF_START:
+						case EVT_CONSOLE_COMMAND_STOP_DISINF:
+						case EVT_CONSOLE_RESUME_DISINF_STAGE:
+						
+						case MACREQ_BC_OPENFILL_COMPLETED:
+
+						
+						Cl_MacRetval = Cl_disinf_controller(Cl_MacEvent);
+						break;
+						case MACREQ_START_PRE_DISINF_RINSE:
+						case MACREQ_START_POST_DISINF_RINSE:
+						Cl_MacRetval = Cl_Rinse_Controller(Cl_MacEvent);
+						break;
+						case MACREQ_PRE_DISINFECT_RINSE_COMPLETED:
+						case MACREQ_POST_DISINFECT_RINSE_COMPLETED:
+						Cl_MacRetval = Cl_disinf_controller(Cl_MacEvent);
+						break;
+						case MACREQ_DISINF_COMPLETED:
+						Cl_MacRetval = Cl_Init_Controller(EVT_COMMAND_ENTER_STANDBY);
+						Cl_MacRetval = Cl_Standby_Controller(EVT_COMMAND_ENTER_STANDBY);
+						Cl_MacEvent = EVT_NULL;
+						Cl_MacState =   MAC_STANDBY;
+						break;
+						default:break;
+					}
+	
+					Cl_MacEvent = EVT_NULL;
+					break;
 					case MAC_SAFE_STANDBY:
 					switch ( Cl_MacEvent )
 				
 					{
 						case EVT_CONSOLE_COMMAND_RINSE_START:
+						
 						break;
 						case EVT_CONSOLE_COMMAND_DIALYSIS_PREP:
 						break;
@@ -503,7 +532,7 @@ PIOA->PIO_ABSR = 0x00090000;
 					switch ( Cl_MacEvent )
 				
 					{
-						case EVT_CONSOLE_COMMAND_RINSE_START:
+					
 							loopcountinsec =0;
 							Cl_MacRetval = Cl_Standby_Controller(Cl_MacEvent);
 							if(Cl_MacRetval == CL_OK)
@@ -513,6 +542,7 @@ PIOA->PIO_ABSR = 0x00090000;
 							
 							Cl_MacEvent = EVT_NULL;
 						break;
+
 						case EVT_TIMER_EXPIRED:
 							Cl_MacRetval = Cl_Rinse_Controller(Cl_MacEvent);
 							Cl_MacEvent = EVT_NULL;
@@ -526,8 +556,8 @@ PIOA->PIO_ABSR = 0x00090000;
 						case EVT_TICK_HOUR:
 						case EVT_ALARM_TRIGGERED:
 						case EVT_ALERT_TRIGGERED:
-						case EVT_CONSOLE_COMMAND_GET_DATA:
-						case EVT_CONSOLE_COMMAND_SET_DATA:
+					//	case EVT_CONSOLE_COMMAND_GET_DATA:
+					//	case EVT_CONSOLE_COMMAND_SET_DATA:
 						case MACREQ_BC_OPENFILL_COMPLETED:
 							Cl_MacRetval = Cl_Rinse_Controller(Cl_MacEvent);
 							
@@ -538,6 +568,8 @@ PIOA->PIO_ABSR = 0x00090000;
 							if( Cl_MacRetval == CL_OK)
 							{
 								Cl_MacState = MAC_POST_RINSE_STANDBY;
+								uint8_t temp = MAC_POST_RINSE_STANDBY;
+									Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(uint8_t*)temp,1);
 							}
 							Cl_MacEvent = EVT_NULL;
 						break;
@@ -569,7 +601,16 @@ PIOA->PIO_ABSR = 0x00090000;
 				switch ( Cl_MacEvent )
 				
 					{
+
+						case EVT_CONSOLE_COMMAND_DISINF_START:
+
+						Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
+						Cl_MacRetval = Cl_disinf_controller(Cl_MacEvent);
+						Cl_MacState = MAC_DISINFECT;
+						break;
+						
 						case EVT_CONSOLE_COMMAND_RINSE_START:
+						
 								Cl_MacRetval = Cl_Standby_Controller(Cl_MacEvent);
 								if(Cl_MacRetval == CL_OK)
 								{
@@ -580,6 +621,7 @@ PIOA->PIO_ABSR = 0x00090000;
 								{
 									Cl_MacState = MAC_RINSE;
 									//Cl_MacState = MAC_POST_RINSE_STANDBY;
+										Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_RINSE,1);
 								}
 								Cl_MacEvent = EVT_NULL;
 						break;
@@ -597,6 +639,8 @@ PIOA->PIO_ABSR = 0x00090000;
 							if(Cl_MacRetval == CL_OK)
 							{
 									Cl_MacState = MAC_DPREP;
+										
+											Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_DPREP,1);
 							}
 						break;
 						case EVT_SEND_MIXING_PREP_START://0x21
@@ -611,13 +655,13 @@ PIOA->PIO_ABSR = 0x00090000;
 						break;
 						case EVT_ALARM_TRIGGERED:
 						case EVT_ALERT_TRIGGERED:
-						case EVT_CONSOLE_COMMAND_GET_DATA:
-							Cl_MacRetval = Cl_Standby_Controller(Cl_MacEvent);
+					//	case EVT_CONSOLE_COMMAND_GET_DATA:
+						
 						//	Cl_MacRetval = Cl_Rinse_Controller(Cl_MacEvent);
-							Cl_MacEvent = EVT_NULL;
-						break;
-						case EVT_CONSOLE_COMMAND_SET_DATA:
-							Cl_MacRetval = Cl_dprep_controller(Cl_MacEvent);
+						//	Cl_MacEvent = EVT_NULL;
+					//	break;
+					//	case EVT_CONSOLE_COMMAND_SET_DATA:
+						//	Cl_MacRetval = Cl_dprep_controller(Cl_MacEvent);
 						
 						break;
 						case EVT_CONSOLE_COMMAND_RCIRC_START:
@@ -640,8 +684,8 @@ PIOA->PIO_ABSR = 0x00090000;
 					case MAC_DPREP:
 					switch ( Cl_MacEvent )
 						{
-						case EVT_CONSOLE_COMMAND_SET_DATA:
-						case EVT_CONSOLE_COMMAND_GET_DATA:
+					//	case EVT_CONSOLE_COMMAND_SET_DATA:
+					//	case EVT_CONSOLE_COMMAND_GET_DATA:
 						case EVT_CONSOLE_COMMAND_SET_BLDPMP_ON:
 						case EVT_CONSOLE_COMMAND_SET_BLDPMP_OFF:
 						case EVT_CONSOLE_COMMAND_SET_BLDPUMPRATE:
@@ -679,6 +723,7 @@ PIOA->PIO_ABSR = 0x00090000;
 						{
 						//	Cl_MacState = MAC_POST_DPREP_STANDBY; // for now the prime is set after manual prwepartion is completed
 							Cl_MacState = MAC_DPREP_PRIME;
+								Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_DPREP_PRIME,1);
 						}
 						break;
 						
@@ -690,6 +735,7 @@ PIOA->PIO_ABSR = 0x00090000;
 						if(Cl_MacRetval == CL_OK)
 						{
 							Cl_MacState = MAC_POST_DPREP_STANDBY;
+								Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_POST_DPREP_STANDBY,1);
 						}
 						break;
 						
@@ -705,8 +751,8 @@ PIOA->PIO_ABSR = 0x00090000;
 					switch ( Cl_MacEvent )
 				
 					{
-						case EVT_CONSOLE_COMMAND_SET_DATA:
-						case EVT_CONSOLE_COMMAND_GET_DATA:
+					//	case EVT_CONSOLE_COMMAND_SET_DATA:
+					//	case EVT_CONSOLE_COMMAND_GET_DATA:
 						case EVT_CONSOLE_COMMAND_START_DIALYSATE_FILLING:
 						case EVT_CONSOLE_COMMAND_DILYSER_CONNECTED:
 						case EVT_CONSOLE_COMMAND_START_DIALISER_PRIME:
@@ -725,6 +771,7 @@ PIOA->PIO_ABSR = 0x00090000;
 						if(Cl_MacRetval == CL_OK)
 						{
 							Cl_MacState = 	MAC_DPREP_PRIME;
+								Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_DPREP_PRIME,1);
 						}
 						break;
 
@@ -739,6 +786,7 @@ PIOA->PIO_ABSR = 0x00090000;
 						if(Cl_MacRetval == CL_OK)
 						{
 							Cl_MacState = MAC_POST_DPREP_STANDBY;
+								Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_POST_DPREP_STANDBY,1);
 						}
 						break;
 					
@@ -772,8 +820,8 @@ PIOA->PIO_ABSR = 0x00090000;
 						Cl_MacRetval = Cl_dprep_controller(Cl_MacEvent);
 						break;
 						
-						case EVT_CONSOLE_COMMAND_SET_DATA:
-						case EVT_CONSOLE_COMMAND_GET_DATA:
+						//case EVT_CONSOLE_COMMAND_SET_DATA:
+						//case EVT_CONSOLE_COMMAND_GET_DATA:
 						Cl_MacRetval = Cl_dprep_controller(Cl_MacEvent);
 						break;
 						case EVT_CONSOLE_COMMAND_DIALYSIS_START:
@@ -794,6 +842,7 @@ PIOA->PIO_ABSR = 0x00090000;
 						if(Cl_MacRetval == CL_OK)
 						{
 							Cl_MacState = MAC_DIALYSIS;
+								Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_DIALYSIS,1);
 						}
 						break;
 						default: break;
@@ -810,17 +859,20 @@ PIOA->PIO_ABSR = 0x00090000;
 						case EVT_TICK_HOUR:
 						case EVT_ALARM_TRIGGERED:
 						case EVT_ALERT_TRIGGERED:
-						case EVT_CONSOLE_COMMAND_GET_DATA:
-						case EVT_CONSOLE_COMMAND_SET_DATA:
+					//	case EVT_CONSOLE_COMMAND_GET_DATA:
+					//	case EVT_CONSOLE_COMMAND_SET_DATA:
 							Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
 							Cl_MacEvent = EVT_NULL;
 						break;
 						
 						case EVT_CONSOLE_COMMAND_DIALYSIS_STOP:
+						case EVT_CONSOLE_COMMAND_DIALYSIS_PAUSE:
+						case EVT_CONSOLE_COMMAND_DIALYSIS_BYPASS:
 						Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
 							if( Cl_MacRetval == CL_OK)
 							{
 								Cl_MacState = MAC_SAFE_DIALYSIS;
+									Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_SAFE_DIALYSIS,1);
 							}
 						break;
 						case EVT_CONSOLE_COMMAND_DIALYSIS_START:
@@ -841,6 +893,7 @@ PIOA->PIO_ABSR = 0x00090000;
 						if(Cl_MacRetval == CL_OK)
 						{
 							Cl_MacState = MAC_DIALYSIS;
+								Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_DIALYSIS,1);
 						}
 						break;
 						case MACREQ_DIALYSIS_COMPLETED:
@@ -849,6 +902,7 @@ PIOA->PIO_ABSR = 0x00090000;
 							if( Cl_MacRetval == CL_OK)
 							{
 								Cl_MacState = MAC_POST_DIALYSIS_STANDBY;
+									Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_POST_DIALYSIS_STANDBY,1);
 							}
 							Cl_MacEvent = EVT_NULL;
 						break;
@@ -869,15 +923,16 @@ PIOA->PIO_ABSR = 0x00090000;
 							if( Cl_MacRetval == CL_OK)
 							{
 								Cl_MacState = MAC_RINSE;
+									Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_RINSE,1);
 								//Cl_MacState = MAC_POST_RINSE_STANDBY;
 							}
 							Cl_MacEvent = EVT_NULL;
 						break;
-						case EVT_CONSOLE_COMMAND_GET_DATA:
-						case EVT_CONSOLE_COMMAND_SET_DATA:
-							Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
-							Cl_MacEvent = EVT_NULL;
-							break;
+					//	case EVT_CONSOLE_COMMAND_GET_DATA:
+					//	case EVT_CONSOLE_COMMAND_SET_DATA:
+					//		Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
+						//	Cl_MacEvent = EVT_NULL;
+						//	break;
 						case EVT_CONSOLE_COMMAND_DIALYSIS_START:
 							Cl_MacRetval = Cl_Standby_Controller(Cl_MacEvent);
 							if((Cl_MacRetval == CL_OK)||(Cl_MacRetval == CL_REJECTED))
@@ -896,6 +951,7 @@ PIOA->PIO_ABSR = 0x00090000;
 						if(Cl_MacRetval == CL_OK)
 						{
 							Cl_MacState = MAC_DIALYSIS;
+								Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_DIALYSIS,1);
 						}
 						break;
 
@@ -906,6 +962,19 @@ PIOA->PIO_ABSR = 0x00090000;
 					switch ( Cl_MacEvent )
 				
 					{
+						case EVT_CONSOLE_COMMAND_DISINF_START:
+						
+						Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
+						Cl_MacRetval = Cl_disinf_controller(Cl_MacEvent);
+						
+						Cl_MacState = MAC_DISINFECT;
+						
+						break;
+					//	case EVT_CONSOLE_COMMAND_GET_DATA:
+					//	case EVT_CONSOLE_COMMAND_SET_DATA:
+					//		Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
+					//		Cl_MacEvent = EVT_NULL;
+					//		break;
 						case EVT_CONSOLE_COMMAND_RINSE_START:
 							Cl_MacRetval = Cl_Standby_Controller(Cl_MacEvent);
 							if(Cl_MacRetval == CL_OK)
@@ -916,6 +985,7 @@ PIOA->PIO_ABSR = 0x00090000;
 							if( Cl_MacRetval == CL_OK)
 							{
 								Cl_MacState = MAC_RINSE;
+									Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATE,(void*)MAC_RINSE,1);
 								//Cl_MacState = MAC_POST_RINSE_STANDBY;
 							}
 							Cl_MacEvent = EVT_NULL;
@@ -997,7 +1067,7 @@ Cl_ReturnCodes  Cl_App_init(void)
 	
 	Cl_RetValue = Cl_Init_Alarms();
 	Cl_RetValue = Cl_Console_init();
-	Cl_RetValue = Cl_dinf_init();
+	Cl_RetValue = Cl_disinf_init();
 	Cl_RetValue = Cl_dlsis_init();
 	Cl_RetValue = Cl_dprep_init(	);
 	Cl_RetValue = Cl_rinse_init();

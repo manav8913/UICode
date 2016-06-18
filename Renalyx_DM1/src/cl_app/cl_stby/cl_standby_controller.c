@@ -13,20 +13,24 @@
 #include "sv_stubs/inc/sv_stub.h"
 #include "sv_stubs/inc/sv_types.h"
 #include "Platform/Service/sv_interface.h"
+#include "cl_app/cl_status/inc/cl_status.h"
+#include "cl_app\cl_status\comp\inc\Cl_Conductivity_Sensors.h"
 
 
 extern Cl_ConsoleMsgType Cl_ConsoleRxMsg;
 extern Cl_ReturnCodes cl_wait(uint32_t ul_dly_ticks);
 extern Cl_ReturnCodes   Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
-extern Cl_ReturnCodes Cl_AlarmActivateAlarms(Cl_AlarmIdType , bool);
+extern Cl_ReturnCodes Cl_AlarmActivateAlarms(Cl_NewAlarmIdType , bool);
 extern Cl_ReturnCodes sv_nvmgetdata(uint8_t , uint8_t* );
 extern Cl_ReturnCodes  sv_nvmsetdata(uint8_t ,uint8_t*,uint8_t datasize );
-extern Cl_ReturnCodes Cl_Alarm_GetAlarmStatus(Cl_AlarmIdType  , bool* );
+extern Cl_ReturnCodes Cl_Alarm_GetAlarmStatus(Cl_NewAlarmIdType  , bool* );
 extern uint8_t  sv_cntrl_deactivatepump(sv_pumptype);
 extern sv_cntrl_poweroffheater(void);
 extern uint8_t sv_cntrl_deactivate_valve(sv_valvetype );
 extern uint8_t sv_cs_setpotvalue(uint32_t resistance) ;
 extern uint8_t sv_cntrl_deactivate_valve(sv_valvetype ); 
+extern uint8_t sv_cs_setcondpotvalue(uint16_t resistance);
+extern Cl_ReturnCodes  Cl_Conductivity_Sensor_Controller(Cl_CondSensor_EventType Cl_cond_Event);
 
 
 
@@ -44,6 +48,8 @@ Cl_Stby_States cl_stbystate = CL_STBY_STATE_IDLE;
  int Cl_StbRinsesecondscounter =0 ,Cl_StbRinseMinutescounter=0, Cl_StbRinseshourscounter=0;
  int Cl_StbRinseTotalMinutescounter=0, Cl_StbRinseTotalhourscounter=0;
  bool Cl_StbRinseOpenFillTimeOut = false;
+ 
+ extern Cl_AlarmThresholdType  Cl_alarmThresholdTable;
 
 Cl_ReturnCodes Cl_Standby_Controller(MAC_EVENTS Cl_MacStandbyEvent)
 {
@@ -94,61 +100,130 @@ Cl_ReturnCodes Cl_Standby_Controller(MAC_EVENTS Cl_MacStandbyEvent)
 			//printf("J\n");
 			switch (cl_stdby_event)
 			{
-				case EVENT_STBY_START_RINSE:
-				//check for alarms and then notify if needed
-					cl_stbystate = CL_STBY_STATE_IDLE;
-				break;
-				case EVENT_STBY_DIALYSIS_PREP:
-				// check for alarms and change hardware status as required before going to dialysis prepration
-				break;
-				case EVENT_STBY_GET_DATA:
-				if(Cl_ConsoleRxMsg.msgready == true)
-				{
-					
-					switch(Cl_ConsoleRxMsg.data.byte[0])
+					case EVENT_STBY_START_RINSE:
+					//check for alarms and then notify if needed
+						cl_stbystate = CL_STBY_STATE_IDLE;
+					break;
+					case EVENT_STBY_DIALYSIS_PREP:
+					// check for alarms and change hardware status as required before going to dialysis prepration
+					break;
+					case EVENT_STBY_GET_DATA:
+					if(Cl_ConsoleRxMsg.msgready == true)
 					{
-						case CON_RX_PARAM_DATA_RINSE_STATUS:
-							//	cl_wait(10);
+					
+						switch(Cl_ConsoleRxMsg.data.byte[0])
+						{
+							case CON_RX_PARAM_DATA_RINSE_STATUS:
+								//	cl_wait(10);
 													
-								con_command = CON_TX_COMMAND_SYSDATA;
-								//cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_RINSE_NVM_RINSE_STATUS, &data);
-								dataarray[0] = CON_TX_PARAM_DATA_RINSE_STATUS;
-								cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);
+									con_command = CON_TX_COMMAND_SYSDATA;
+									//cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_RINSE_NVM_RINSE_STATUS, &data);
+									dataarray[0] = CON_TX_PARAM_DATA_RINSE_STATUS;
+									cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);
+									cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
+									//cl_wait(100);
+							break;
+						{
+							case CON_RX_PARAM_DATA_DISINF_STATUS:
+								//	cl_wait(10);
 													
-								//Reset the  OPENFILL time count
-								cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,1);
-								//cl_wait(100);
-						break;
-						default:
-						break;
-					}
+									con_command = CON_TX_COMMAND_SYSDATA;									
+									dataarray[0] = CON_TX_PARAM_DATA_DISINF_STATUS;	
+									cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);																		
+									cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_DISINF_STATUS, &dataarray[1]);
+									cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
 
+							break;
+							default:
+							break;
+						}
+
+					}
 				}
 				break;
 				
 				case EVENT_STBY_SET_DATA:
 				if(Cl_ConsoleRxMsg.msgready == true)
 				{
+					cl_Datastreamtype cl_temp  ;
+					cl_temp.bytearray[0] = Cl_ConsoleRxMsg.data.byte[1];
+					cl_temp.bytearray[1] = Cl_ConsoleRxMsg.data.byte[2];
+					cl_temp.bytearray[2] = Cl_ConsoleRxMsg.data.byte[3];
+					cl_temp.bytearray[3] = Cl_ConsoleRxMsg.data.byte[4];
 					
 					switch(Cl_ConsoleRxMsg.data.byte[0])
 					{
-						case CON_RX_PARAM_DATA_RINSE_STATUS:
-						//		cl_wait(10);
-													
-								con_command = CON_TX_COMMAND_SYSDATA;
-								//cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_RINSE_NVM_RINSE_STATUS, &data);
-								dataarray[0] = CON_TX_PARAM_DATA_RINSE_STATUS;
-								//cl_stby_retval =sv_nvmsetdata(Cl_ConsoleRxMsg.data.byte[0],&Cl_ConsoleRxMsg.data.byte[1]);
-								cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);
-													
-								//Reset the  OPENFILL time count
-								cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
-								//cl_wait(100);
+						case ID_dflow:
 						break;
-						default:
+						case ID_settemp:
 						break;
+						case ID_heprate:
+						break;
+						case ID_setcond:
+						break;
+						case ID_ufrate:
+						break;
+						case ID_ufgoal:
+						break;
+						case ID_bolusvol:
+						break;
+						case ID_bloodrate:
+						break;
+						case ID_hepstoptime:
+						break;
+						case ID_syringetype:
+						break;
+						case ID_heparincheck:
+						break;
+						case ID_minufrate:
+						break;
+						case ID_treattime:
+						break;
+						case ID_bloodratereturn:
+						break;
+						case ID_bloodratetreat:
+						break;
+						case ID_tempulimit:
+						Cl_alarmThresholdTable.temp3_high_threshold =  (cl_temp.word)/10;
+						break;
+						case ID_templlimit:
+						Cl_alarmThresholdTable.temp3_low_threshold =  (cl_temp.word)/10;
+						break;
+						case ID_tmpllimit:
+						Cl_alarmThresholdTable.tmp_low_threshold =  cl_temp.word;
+						break;
+						case ID_tmpulimit:
+						Cl_alarmThresholdTable.tmp_high_threshold =  cl_temp.word;
+						break;
+						case ID_vptllimit:
+						Cl_alarmThresholdTable.vpt_low_threshold =  cl_temp.word;
+						break;
+						case ID_vptulimit:
+						Cl_alarmThresholdTable.vpt_high_threshold =  cl_temp.word;
+						break;
+						case ID_ufllimit:
+						break;
+						case ID_ufulimit:
+						break;
+						break;
+						case ID_dflowllimit:
+						case ID_dflowulimit:
+						break;
+						case ID_condllimit:
+						Cl_alarmThresholdTable.cond_low_threshold =  cl_temp.word;
+						break;
+						case ID_condulimit:
+						Cl_alarmThresholdTable.cond_high_threshold =  cl_temp.word;
+						break;
+						case ID_aptllimit:
+						Cl_alarmThresholdTable.apt_low_threshold =  cl_temp.word;
+						break;
+						case ID_aptulimit:
+						Cl_alarmThresholdTable.apt_high_threshold =  cl_temp.word;
+						break;
+
+						default:break;
 					}
-							
 				}
 				break;
 				
@@ -217,8 +292,18 @@ Cl_ReturnCodes Cl_Standby_Controller(MAC_EVENTS Cl_MacStandbyEvent)
 										
 										//Reset the  OPENFILL time count
 										cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,(uint8_t)2);
-									//	cl_wait(100);
+									//	cl_wait(
 										break;
+										case CON_RX_PARAM_DATA_DISINF_STATUS:
+											//	cl_wait(10);
+													
+												con_command = CON_TX_COMMAND_SYSDATA;
+												//cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_RINSE_NVM_RINSE_STATUS, &data);
+												dataarray[0] = CON_TX_PARAM_DATA_DISINF_STATUS;	
+												cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);
+												cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
+												//cl_wait(100);
+						break;
 										default:
 										break;
 									}
@@ -310,6 +395,18 @@ Cl_ReturnCodes Cl_Standby_Controller(MAC_EVENTS Cl_MacStandbyEvent)
 										cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
 										//cl_wait(10);
 										break;
+										case CON_RX_PARAM_DATA_DISINF_STATUS:
+											//	cl_wait(10);
+													
+												con_command = CON_TX_COMMAND_SYSDATA;
+												//cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_RINSE_NVM_RINSE_STATUS, &data);
+												dataarray[0] = CON_TX_PARAM_DATA_DISINF_STATUS;								
+												cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);
+													
+												//Reset the  OPENFILL time count
+												cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
+												//cl_wait(100);
+										break;
 										default:
 										break;
 									}
@@ -362,10 +459,21 @@ Cl_ReturnCodes Cl_Standby_Controller(MAC_EVENTS Cl_MacStandbyEvent)
 												//cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_RINSE_NVM_RINSE_STATUS, &data);
 												dataarray[0] = CON_TX_PARAM_DATA_RINSE_STATUS;
 												cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);
-												
-												//Reset the  OPENFILL time count
+	
 												cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
 												//cl_wait(10);
+												break;
+												case CON_RX_PARAM_DATA_DISINF_STATUS:
+													//	cl_wait(10);
+													
+														con_command = CON_TX_COMMAND_SYSDATA;
+														//cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_RINSE_NVM_RINSE_STATUS, &data);
+														dataarray[0] = CON_TX_PARAM_DATA_DISINF_STATUS;								
+														cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);
+													
+														//Reset the  OPENFILL time count
+														cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
+														//cl_wait(100);
 												break;
 												default:
 												break;
@@ -401,6 +509,18 @@ Cl_ReturnCodes Cl_Standby_Controller(MAC_EVENTS Cl_MacStandbyEvent)
 										cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
 										//cl_wait(10);
 										break;
+										case CON_RX_PARAM_DATA_DISINF_STATUS:
+											//	cl_wait(10);
+													
+												con_command = CON_TX_COMMAND_SYSDATA;
+												//cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_RINSE_NVM_RINSE_STATUS, &data);
+												dataarray[0] = CON_TX_PARAM_DATA_DISINF_STATUS;								
+												cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);
+													
+												//Reset the  OPENFILL time count
+												cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
+												//cl_wait(100);
+										break;
 										default:
 										break;
 									}
@@ -434,6 +554,18 @@ Cl_ReturnCodes Cl_Standby_Controller(MAC_EVENTS Cl_MacStandbyEvent)
 										cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
 										//cl_wait(10);
 										break;
+										case CON_RX_PARAM_DATA_DISINF_STATUS:
+											//	cl_wait(10);
+													
+												con_command = CON_TX_COMMAND_SYSDATA;
+												//cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_RINSE_NVM_RINSE_STATUS, &data);
+												dataarray[0] = CON_TX_PARAM_DATA_DISINF_STATUS;								
+												cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);
+													
+												//Reset the  OPENFILL time count
+												cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
+												//cl_wait(100);
+										break;
 										default:
 										break;
 									}
@@ -446,6 +578,7 @@ Cl_ReturnCodes Cl_Standby_Controller(MAC_EVENTS Cl_MacStandbyEvent)
 							default:
 							break;
 						}
+			break;
 			case CL_STBY_STATE_BO2_V13V14:
 						switch (cl_stdby_event)
 						{
@@ -466,6 +599,18 @@ Cl_ReturnCodes Cl_Standby_Controller(MAC_EVENTS Cl_MacStandbyEvent)
 										//Reset the  OPENFILL time count
 										cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
 										//cl_wait(10);
+										break;
+										case CON_RX_PARAM_DATA_DISINF_STATUS:
+											//	cl_wait(10);
+													
+												con_command = CON_TX_COMMAND_SYSDATA;
+												//cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_RINSE_NVM_RINSE_STATUS, &data);
+												dataarray[0] = CON_TX_PARAM_DATA_DISINF_STATUS;								
+												cl_stby_retval = (uint8_t)sv_nvmgetdata(NV_NVM_RINSE_STATUS, &dataarray[1]);
+													
+												//Reset the  OPENFILL time count
+												cl_stby_retval = Cl_SendDatatoconsole(con_command,&dataarray,2);
+												//cl_wait(100);
 										break;
 										default:
 										break;
@@ -559,7 +704,9 @@ Cl_ReturnCodes  cl_stby_translatemacevent(MAC_EVENTS Cl_MacStbyEvent,Cl_Stby_Eve
 
 		
 	
-		//	cl_stby_retval =  sv_cs_setpotvalue((800 * 1024)/10000);	
+			cl_stby_retval =  sv_cs_setpotvalue((2200 * 1024)/10000);	
+			//cl_stby_retval =  sv_cs_setcondpotvalue((3200 * 1024)/10000);
+			cl_stby_retval =  Cl_Conductivity_Sensor_Controller(COND_EVENT_INIT);
 		
 		
 

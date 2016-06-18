@@ -21,6 +21,8 @@ static int8_t cl_dialyser_prime_min = 0;
 Cl_ReturnCodes cl_dprep_primecontroller(Cl_Dprep_PrimeEvents,int16_t);
 Cl_ReturnCodes Cl_Dprep_primeUpdatePrimeTimeInfo(void);
 Cl_ReturnCodes Cl_Dprep_UpdateDialyserPrimeTimeInfo(void);
+Cl_ReturnCodes cl_dprep_activate_prime_related_alarms(void);
+
 
 extern Cl_ReturnCodes        Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 extern uint8_t  sv_cntrl_activatepump(sv_pumptype);
@@ -28,6 +30,9 @@ extern uint8_t  sv_cntrl_deactivatepump(sv_pumptype);
 extern uint8_t sv_cntrl_setpumpspeed(sv_pumptype sv_pump_id,uint32_t speed);
 extern Cl_ReturnCodes cl_bp_controller(cl_bp_events bp_event , int16_t data);
 extern Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype);
+extern Cl_ReturnCodes Cl_AlarmConfigureAlarmType(Cl_NewAlarmIdType,Cl_AlarmTriggerType,uint16_t,uint16_t,uint8_t);
+extern Cl_ReturnCodes Cl_AlarmActivateAlarms(Cl_NewAlarmIdType,bool );
+
 
 Cl_ReturnCodes cl_dprep_primecontroller(Cl_Dprep_PrimeEvents prime_event , int16_t data)
 {
@@ -448,3 +453,12 @@ Cl_ReturnCodes Cl_Dprep_UpdateDialyserPrimeTimeInfo(void)
 
 }
 		
+Cl_ReturnCodes cl_dprep_activate_prime_related_alarms(void)
+{
+			Cl_ReturnCodes  Cl_dprep_primeretcode = CL_ERROR;
+			//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(APTSTATUS_HIGH,true );
+			//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(VPTSTATUS_HIGH,true );
+			Cl_dprep_primeretcode =  Cl_AlarmConfigureAlarmType(BLOODDOOR_STATUS_OPEN,LOGIC_LOW,0,0,0);
+			Cl_dprep_primeretcode =  Cl_AlarmActivateAlarms(BLOODDOOR_STATUS_OPEN,true );
+	
+}

@@ -296,9 +296,9 @@ Cl_ReturnCodes	 Cl_Mac_Create_ConsoleEvent(void)
 			Cl_IIC_ConsoleTxMsg[tempcount+3] = 0xBB;
 			packet_size = Cl_ConsoleRxMsg.datasize + 7;
 			{
-				//if ( (command != CON_TX_COMMAND_COMMAND_SCRIPT_BULK_PRINT) && (command != CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT) &&(command != CON_TX_COMMAND_PRINTDATA) && (command != CON_TX_COMMAND_PRINTTEXT))
+			//	if ( (command != CON_TX_COMMAND_COMMAND_SCRIPT_BULK_PRINT) && (command != CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT) &&(command != CON_TX_COMMAND_PRINTDATA) && (command != CON_TX_COMMAND_PRINTTEXT))
 				{
-				//	DD_IIC_CONSOLE_SEND(0x77, &Cl_IIC_ConsoleTxMsg, packet_size);
+			//		DD_IIC_CONSOLE_SEND(0x77, &Cl_IIC_ConsoleTxMsg, packet_size);
 				}
 		
 			}
@@ -414,22 +414,22 @@ Cl_ReturnCodes Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype command, uint8_t* da
 
 
 		
-			if( CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT == command)
+			if(( CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT == command)|| ( CON_TX_COMMAND_COMMAND_SCRIPT_BULK_PRINT == command) ||( command == CON_TX_COMMAND_PRINTDATA) ||(command == CON_TX_COMMAND_PRINTTEXT))
 			{
-			//	return;
+				return;
 			}
 		
 	if( ( command != CON_TX_COMMAND_PRINTDATA) && (command != CON_TX_COMMAND_PRINTTEXT) )
 	{
-		cmd_backup.cmdtype[cmd_backup.array_commands_index].commands_inouttype = 1;
-		cmd_backup.cmdtype[cmd_backup.array_commands_index].command =  command;
-	//	cmd_backup.array_commands_inouttype[cmd_backup.array_commands_index] =  1;
-	//	cmd_backup.array_commands[cmd_backup.array_commands_index] = command;
-		cmd_backup.array_commands_index++;
-		if(cmd_backup.array_commands_index == 100)
+	//	cmd_backup.cmdtype[cmd_backup.array_commands_index].commands_inouttype = 1;
+	//	cmd_backup.cmdtype[cmd_backup.array_commands_index].command =  command;
+	//	cmd_backup.array_commands_index++;
+	//	if(cmd_backup.array_commands_index == 100)
 		{
-			cmd_backup.array_commands_index = 0;
+	//		cmd_backup.array_commands_index = 0;
 		}
+		
+		
 	}
 	
 //	if (CON_TX_COMMAND_ALARM == command )
@@ -469,7 +469,9 @@ Cl_ReturnCodes Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype command, uint8_t* da
 			}
 			
 			{
-				if ( (command != CON_TX_COMMAND_COMMAND_SCRIPT_BULK_PRINT) && (command != CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT) &&(command != CON_TX_COMMAND_PRINTDATA) && (command != CON_TX_COMMAND_PRINTTEXT))
+				//if ( (command != CON_TX_COMMAND_COMMAND_SCRIPT_BULK_PRINT) && (command != CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT) &&(command != CON_TX_COMMAND_PRINTDATA) && (command != CON_TX_COMMAND_PRINTTEXT))
+				//if ( (command != CON_TX_COMMAND_COMMAND_SCRIPT_BULK_PRINT) && (command != CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT) &&(command != CON_TX_COMMAND_PRINTDATA) && (command != CON_TX_COMMAND_PRINTTEXT))
+				if ( (command != CON_TX_COMMAND_COMMAND_IIC_HANGUP) )
 				{
 				//	DD_IIC_CONSOLE_SEND(0x77, &Cl_IIC_ConsoleTxMsg, packet_size+1);
 				}
@@ -555,16 +557,15 @@ Cl_ReturnCodes Cl_SendDatatoconsoleDummycommand(Cl_ConsoleTxCommandtype command,
 }
 Cl_ReturnCodes Cl_Console_ConvertConsoleEvent_toMacEvent(Cl_ConsoleRxEventsType command ,MAC_EVENTS* MacEvent)
 {
-	cmd_backup.cmdtype[cmd_backup.array_commands_index].commands_inouttype = 0;
-	cmd_backup.cmdtype[cmd_backup.array_commands_index].command =  command;
+//	cmd_backup.cmdtype[cmd_backup.array_commands_index].commands_inouttype = 0;
+//	cmd_backup.cmdtype[cmd_backup.array_commands_index].command =  command;
 		
 		
-//	cmd_backup.array_commands_inouttype[cmd_backup.array_commands_index] =  0;
-//	cmd_backup.array_commands[cmd_backup.array_commands_index] = command;
-	cmd_backup.array_commands_index++;
-	if(cmd_backup.array_commands_index == 100)
+
+//	cmd_backup.array_commands_index++;
+//	if(cmd_backup.array_commands_index == 100)
 	{
-		cmd_backup.array_commands_index = 0;
+//		cmd_backup.array_commands_index = 0;
 	}
 	switch(command)
 	{
@@ -579,7 +580,13 @@ Cl_ReturnCodes Cl_Console_ConvertConsoleEvent_toMacEvent(Cl_ConsoleRxEventsType 
 //		printf("J/n");
 			*MacEvent = EVT_CONSOLE_COMMAND_RINSE_START;
 		break;
+		case CON_RX_EVT_COMMAND_START_DISINF:
 		
+		*MacEvent = EVT_CONSOLE_COMMAND_DISINF_START;
+		break;
+		case CON_RX_EVT_COMMAND_RESUME_DISINF_STAGE:
+		*MacEvent = EVT_CONSOLE_RESUME_DISINF_STAGE;
+		break;
 		case CON_RX_COMMAND_SET_BLDPMP_ON:
 		*MacEvent = EVT_CONSOLE_COMMAND_SET_BLDPMP_ON;
 		break;
@@ -632,6 +639,13 @@ Cl_ReturnCodes Cl_Console_ConvertConsoleEvent_toMacEvent(Cl_ConsoleRxEventsType 
 		break;
 		case CON_RX_COMMAND_DIALYSIS_STOP:
 			*MacEvent = EVT_CONSOLE_COMMAND_DIALYSIS_STOP;
+		break;
+		case CON_RX_COMMAND_DIALYSIS_PAUSE:
+			*MacEvent = EVT_CONSOLE_COMMAND_DIALYSIS_PAUSE;
+		break;
+		
+		case CON_RX_COMMAND_DIALYSIS_BYPASS:
+			*MacEvent = EVT_CONSOLE_COMMAND_DIALYSIS_BYPASS;
 		break;
 		case CON_RX_COMMAND_RINSE_STOP:
 			*MacEvent = EVT_CONSOLE_COMMAND_STOP_RINSE;

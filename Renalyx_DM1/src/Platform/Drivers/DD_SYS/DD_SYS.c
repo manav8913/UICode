@@ -53,17 +53,22 @@ static uint8_t dd_valve_port_16_20 = 0 ;
 
 static bool ByPass = 0 , LoopBack = 0;
 
+
 uint8_t DD_ENABLE_BYPASS()
 {
-	
-	ByPass = true;
+				DD_SET_VALVE (VALVE_ID15);
+				DD_RESET_VALVE (VALVE_ID13);
+				DD_RESET_VALVE (VALVE_ID14);
+				ByPass = true;
 	
 	return 0;
 }
 uint8_t DD_DISABLE_BYPASS()
 {
-	
-	ByPass = false;
+				DD_RESET_VALVE (VALVE_ID15);
+				DD_SET_VALVE (VALVE_ID13);
+				DD_SET_VALVE (VALVE_ID14);
+				ByPass = false;
 	
 	return 0;
 }
@@ -73,18 +78,24 @@ uint8_t DD_ENABLE_LOOPBACK()
 {
 	
 	LoopBack = true;
+				DD_SET_VALVE (VALVE_ID16);
+				DD_RESET_VALVE (VALVE_ID18);
 	return 0;
 }
 uint8_t DD_DISABLE_LOOPBACK()
 {
 	
 	LoopBack = false;
+				DD_RESET_VALVE (VALVE_ID16);
+				DD_SET_VALVE (VALVE_ID18);
 	return 0;
 }
 uint8_t DD_SET_PUMP(sv_pumptype id_pump)
 {
 	
 	uint32_t p_io,peri;
+	
+
 	switch (id_pump)
 	{
 		case DCMOTOR1:  // DC MOTOR 1
@@ -1495,7 +1506,7 @@ uint8_t DD_SET_FLOW_PATH(sv_flowpathtype sv_flowpath)
 		DD_RESET_VALVE (VALVE_ID8);
 		DD_RESET_VALVE (VALVE_ID10);
 		DD_RESET_VALVE (VALVE_ID11);
-		cl_wait(200);		
+		cl_wait(100);		
 		DD_SET_VALVE (VALVE_ID6);
 		DD_SET_VALVE (VALVE_ID7);
 		DD_SET_VALVE (VALVE_ID9);
@@ -1547,7 +1558,7 @@ uint8_t DD_SET_FLOW_PATH(sv_flowpathtype sv_flowpath)
 		DD_RESET_VALVE (VALVE_ID7);
 		DD_RESET_VALVE (VALVE_ID9);
 		DD_RESET_VALVE (VALVE_ID12);
-		cl_wait(200);				
+		cl_wait(100);				
 		DD_SET_VALVE (VALVE_ID5);
 		DD_SET_VALVE (VALVE_ID8);	
 		DD_SET_VALVE (VALVE_ID10);
@@ -1682,6 +1693,42 @@ uint8_t DD_SET_FLOW_PATH(sv_flowpathtype sv_flowpath)
 		
 		break;
 		
+		
+		case FLOW_PATH_ISO_UF:
+		
+
+		DD_RESET_VALVE (VALVE_ID5);
+		DD_RESET_VALVE (VALVE_ID6);
+		DD_RESET_VALVE (VALVE_ID7);
+		DD_RESET_VALVE (VALVE_ID8);
+		DD_RESET_VALVE (VALVE_ID9);
+		DD_RESET_VALVE (VALVE_ID10);
+		DD_RESET_VALVE (VALVE_ID11);
+		DD_RESET_VALVE (VALVE_ID12);
+
+		if( ByPass)
+		{
+			DD_SET_VALVE (VALVE_ID15);
+			DD_RESET_VALVE (VALVE_ID13);
+			DD_RESET_VALVE (VALVE_ID14);
+		}
+		else
+		{
+			DD_RESET_VALVE (VALVE_ID15);	
+			DD_SET_VALVE (VALVE_ID13);
+			DD_SET_VALVE (VALVE_ID14);
+		}
+		if( LoopBack)
+		{
+			DD_SET_VALVE (VALVE_ID16);
+			DD_RESET_VALVE (VALVE_ID18);
+		}
+		else
+		{
+			DD_RESET_VALVE (VALVE_ID16);	
+			DD_SET_VALVE (VALVE_ID18);
+		}
+		break;
 	}
 	
 	return 0;

@@ -84,6 +84,7 @@ extern "C" {
 #define TWI_WP_KEY_VALUE TWI_WPROT_MODE_SECURITY_CODE((uint32_t)0x545749)
 #endif
 
+uint32_t c_lh_div_backup = 0;
 /**
  * \brief Enable TWI master mode.
  *
@@ -174,7 +175,7 @@ uint32_t twi_set_speed(Twi *p_twi, uint32_t ul_speed, uint32_t ul_mck)
 		/* Divide cldiv value */
 		c_lh_div /= TWI_CLK_DIVIDER;
 	}
-
+	c_lh_div_backup = c_lh_div;
 	/* set clock waveform generator register */
 	p_twi->TWI_CWGR =
 			TWI_CWGR_CLDIV(c_lh_div) | TWI_CWGR_CHDIV(c_lh_div) |

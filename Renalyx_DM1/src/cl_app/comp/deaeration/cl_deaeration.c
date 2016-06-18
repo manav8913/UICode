@@ -10,7 +10,7 @@
 #include "cl_app/cl_alarms/inc/cl_alarmdetector.h"
 #include "Platform/Service/sv_interface.h"
 
-extern Cl_ReturnCodes Cl_SysStat_GetSensor_Status_Query(Cl_AlarmIdType, uint16_t*);
+extern Cl_ReturnCodes Cl_SysStat_GetSensor_Status_Query(Cl_SensorDeviceIdType, uint16_t*);
 extern uint8_t sv_cntrl_activate_valve(sv_valvetype );
 extern uint8_t sv_cntrl_deactivate_valve(sv_valvetype );
 

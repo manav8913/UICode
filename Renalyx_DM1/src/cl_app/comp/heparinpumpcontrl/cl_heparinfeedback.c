@@ -12,7 +12,7 @@
 #include "inc/cl_heparinfeedback.h"
 #include "cl_app/inc/cl_types.h"
 
-extern Cl_ReturnCodes Cl_SysStat_GetSensor_Status_Query(Cl_AlarmIdType, uint16_t*);
+extern Cl_ReturnCodes Cl_SysStat_GetSensor_Status_Query(Cl_SensorDeviceIdType, uint16_t*);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 
 
@@ -63,7 +63,7 @@ Cl_ReturnCodes cl_hep_pumpFeedback_set_expected_period(int16_t period)
 Cl_ReturnCodes cl_hep_pumpFeedback_timer(void) // 5 ms clock
 {
 
-	Cl_SysStat_GetSensor_Status_Query(HP_ROTATION_MARKER, &hep_rotataion_marker);
+	Cl_SysStat_GetSensor_Status_Query(SENSOR_HP_FB, &hep_rotataion_marker);
 
 	fivemscounter++;
 	if((cl_hep_pump_state ==  CL_HEP_P_STATE_STARTED) && (hep_rotation_counter > 2))
@@ -133,7 +133,7 @@ Cl_ReturnCodes cl_hep_pump_enddetction_timer(void) // 20 ms clock
 {
 		// START END  DETECTION
 		{
-			Cl_SysStat_GetSensor_Status_Query(HP_START,&hp_start_status);
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_HP_START,&hp_start_status);
 			if(hp_start_status == 1)
 			{
 			//	cl_hep_pump_state = CL_HEP_P_STATE_READY_AT_START;
@@ -153,7 +153,7 @@ Cl_ReturnCodes cl_hep_pump_enddetction_timer(void) // 20 ms clock
 
 
 
-			Cl_SysStat_GetSensor_Status_Query(HP_END,&hp_end_status);
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_HP_END,&hp_end_status);
 			if(hp_end_status == 1)
 			{
 			//	cl_hep_pump_state = CL_HEP_P_STATE_STOPPED_AT_END;

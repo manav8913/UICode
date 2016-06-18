@@ -16,8 +16,8 @@ RinseAlarmsType Cl_RinseAlarmTable[CL_RINSE_ALRM_MAX] =
 	{LEVELSWITCH_ON_TO_OFF,CL_ALARM_ALERT,false,false,false},
 	{HOLDER1STATUS_OPEN,CL_ALARM_ALARM,false,false,false},
 	{HOLDER2STATUS_OPEN,CL_ALARM_ALARM,false,false,false},
-	{TEMP3STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
-	{TEMP2STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
+	{SENSOR_TEMP3STATUS,CL_ALARM_ALARM,false,false,false},
+	{SENSOR_TEMP2STATUS,CL_ALARM_ALARM,false,false,false},
 	{PS1STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
 	{PS2STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
 	{PS3STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
@@ -41,7 +41,7 @@ Cl_ReturnCodes Cl_Rinse_UpdateAlarmTable(ClRinseAlarmIdType* ClRinseAlarmId )
 	uint8_t tempcount = 0;
 	uint8_t data[3] ={0, 0} ,*data1 = NULL;
 	uint8_t data3;
-	Cl_AlarmIdType cl_alarmId;
+	Cl_NewAlarmIdType cl_alarmId;
 	
 	Cl_ConsoleTxCommandtype command = CON_TX_COMMAND_COMMAND_MAX;
 	
@@ -91,7 +91,7 @@ Cl_ReturnCodes Cl_Rinse_ProcessAlarms(void )
 	ClRinseAlarmIdType ClRinseAlarmId;
 	uint8_t data;
 	Cl_ConsoleTxCommandtype command = CON_TX_COMMAND_COMMAND_MAX;
-	Cl_AlarmIdType cl_rinsealarmid;
+	Cl_NewAlarmIdType cl_rinsealarmid;
 	
 	Cl_rinseretcode = Cl_Rinse_UpdateAlarmTable(&ClRinseAlarmId);
 
@@ -101,7 +101,7 @@ Cl_ReturnCodes Cl_Rinse_ProcessAlarms(void )
 }
 
 
-Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid)
+Cl_ReturnCodes  CL_RinseAlarmActon(Cl_NewAlarmIdType cl_rinsealarmid)
 {
 	Cl_ReturnCodes 	Cl_rinseretcode = CL_OK;
 	uint8_t data[3] ={0, 0} ,*data1 = NULL;
@@ -198,9 +198,9 @@ Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid)
 		//enterl_saferinse_state();
 
 		break;
-		case TEMP2STATUS_HIGH:
+		case SENSOR_TEMP2STATUS:
 		
-		Cl_SysStat_GetSensor_Status_Query(TEMP2STATUS_HIGH,&TmpVal);
+		Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP2STATUS,&TmpVal);
 		
 		temp1 = (0.805 * TmpVal) - 1004 ;
 		temp2 = 3000 + (temp1 * 1000)/382;
@@ -222,9 +222,9 @@ Cl_ReturnCodes  CL_RinseAlarmActon(Cl_AlarmIdType cl_rinsealarmid)
 		//enterl_saferinse_state();
 
 		break;
-		case TEMP3STATUS_HIGH:
+		case SENSOR_TEMP3STATUS:
 		
-		Cl_SysStat_GetSensor_Status_Query(TEMP3STATUS_HIGH,&TmpVal);
+		Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&TmpVal);
 		int16_t temp3,temp4;
 		temp3 = (0.805 * TmpVal) - 1004 ;
 		temp4 = 3000 + (temp3 * 1000)/382;

@@ -292,6 +292,8 @@ void calibration_tmp(float millivolts, temp_state temp_var)
 			}*/
 			
 		}
+		millivolts = millivolts/1000;
+		temprature_final_value_1 = 1.830098345 * millivolts *millivolts +  22.62524406 *millivolts + 0.581851503  ;
 	}
 	else if (temp_var==TS2)
 	{
@@ -321,6 +323,8 @@ void calibration_tmp(float millivolts, temp_state temp_var)
 			}*/
 			
 		}
+		millivolts = millivolts/1000;
+		temprature_final_value_2 = 1.830098345 * millivolts *millivolts +  22.62524406 *millivolts + 0.581851503  ;
 	}
 	
 	else if (temp_var == TS3)
@@ -349,8 +353,11 @@ void calibration_tmp(float millivolts, temp_state temp_var)
 				temprature_final_value_3=var;
 				break;
 			}*/
+
 			
 		}
+		millivolts = millivolts/1000;
+		temprature_final_value_3 = 1.830098345 * millivolts *millivolts +  22.62524406 *millivolts + 0.581851503  ;
 		
 	}
 	

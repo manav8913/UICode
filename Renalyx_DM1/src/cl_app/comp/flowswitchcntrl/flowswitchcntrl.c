@@ -10,8 +10,8 @@
 #include "cl_app/cl_console/inc/cl_consolecontroller.h"
 #include "cl_app/cl_testharness/inc/cl_th.h"
 
-extern Cl_ReturnCodes Cl_AlarmResetAlarm(Cl_AlarmIdType  );
-extern Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_AlarmIdType cl_alarm_id , bool cl_status);
+extern Cl_ReturnCodes Cl_AlarmResetAlarm(Cl_NewAlarmIdType  );
+extern Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_NewAlarmIdType cl_alarm_id , bool cl_status);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 
 Flowswitch_msgType Flowswitch_msg = {FLOW_SWITCH_EVENT_UNDEFINED,0 };
@@ -35,8 +35,8 @@ static uint16_t toggle_count = 0;
 						flowswitchcntrlstate  = FLOW_SWITCH_CNTRL_IDLE;
 						break;
 						case FLOW_SWITCH_CNTRLER_EVENT_SEC:
-						Cl_AlarmResetAlarm(FLOWSTATUS_FLOWON);
-						Cl_AlarmResetAlarm(FLOWSTATUS_FLOWOFF);
+						Cl_AlarmResetAlarm(FLOW_NO_FLOW);
+						Cl_AlarmResetAlarm(FLOW_LOW_FLOWRATE);
 						
 										cl_tdata.word = 0;
 

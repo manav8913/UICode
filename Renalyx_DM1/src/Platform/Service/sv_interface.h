@@ -31,6 +31,7 @@ typedef enum {
 	FLOW_PATH_FP11 ,
 	FLOW_PATH_FP12 ,
 	FLOW_PATH_IDLE_RINSE,
+	FLOW_PATH_ISO_UF,
 	FLOW_PATH_MAX,
 }sv_flowpathtype;
 

@@ -50,7 +50,7 @@ typedef enum
 typedef struct
 {
 	
-	Cl_AlarmIdType Cl_RinseAlarmId;
+	Cl_NewAlarmIdType Cl_RinseAlarmId;
 	uint8_t alarmseccount;
 	uint8_t alarmmincount;
 	uint8_t alarm5seccount;

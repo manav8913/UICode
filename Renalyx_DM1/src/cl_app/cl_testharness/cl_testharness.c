@@ -17,6 +17,8 @@
 #include "Platform/Service/sv_interface.h"
 #include "cl_app/cl_alarms/inc/cl_alarmdetector.h"
 #include "cl_app/cl_rinse/inc/cl_rinse_controller.h"
+#include "cl_app/cl_heatcntrl/inc/cl_heatercontroller.h"
+#include "cl_app/cl_cal/calibration.h"
 
 extern void DD_IIC_READ_PROP(uint8_t iic_address, uint16_t* data);
 
@@ -25,7 +27,7 @@ extern Sv_ReturnCodesType sv_nvmsetdata(uint8_t dataItemId,uint8_t* data,uint8_t
 extern Sv_ReturnCodesType  sv_nvmgetdata(uint8_t,uint8_t*);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 extern Cl_ReturnCodes cl_wait(uint32_t ul_dly_ticks);
-extern Cl_ReturnCodes Cl_SysStat_GetSensor_Status_Query(Cl_AlarmIdType, uint16_t*);
+extern Cl_ReturnCodes Cl_SysStat_GetSensor_Status_Query(Cl_SensorDeviceIdType, uint16_t*);
 extern uint8_t sv_cntrl_activate_valve(sv_valvetype );
 extern uint8_t sv_cntrl_deactivate_valve(sv_valvetype );
 extern uint8_t sv_cntrl_activatepump(sv_pumptype );
@@ -37,8 +39,8 @@ extern uint8_t sv_cntrl_deactivatevenousclamp(void);
 extern uint8_t sv_cntrl_poweronheater(void);
 extern uint8_t sv_cntrl_poweroffheater(void);
 extern uint8_t sv_cntrl_incheater(int32_t dty_val);
-extern Cl_AlarmActivateAlarms(Cl_AlarmIdType,bool);
-extern Cl_ReturnCodes Cl_Alarm_TriggerDummyAlarm(Cl_AlarmIdType cl_alarm_id , bool cl_status);
+extern Cl_AlarmActivateAlarms(Cl_NewAlarmIdType,bool);
+extern Cl_ReturnCodes Cl_Alarm_TriggerDummyAlarm(Cl_NewAlarmIdType cl_alarm_id , bool cl_status);
 extern uint8_t sv_cntrl_resetHepa_dir(void);
 extern uint8_t sv_cntrl_setHepa_dir(void);
 extern uint8_t sv_cs_setpotvalue(uint32_t resistance) ;
@@ -53,6 +55,11 @@ extern uint8_t sv_cntrl_enable_bypass(void);
 extern uint8_t sv_cntrl_disable_bypass(void);
 extern uint8_t sv_cntrl_enable_loopback(void);
 extern uint8_t sv_cntrl_disable_loopback(void);
+
+extern uint8_t sv_cs_setcondpotvalue(uint16_t resistance);
+
+extern Cl_ReturnCodes SetHeaterState(HeaterStateType Param_HeaterState);
+
 extern float avgtmp2_target_cel;
 extern float prescribed_temp;
 extern float prev_pres_temp;
@@ -62,6 +69,7 @@ extern uint8_t sys_sw_version;
 extern bool syncdone;
 extern Cl_alarms_alarms;
 extern Cl_AlarmThresholdType  Cl_alarmThresholdTable;
+extern volatile float temprature_final_value_2;
  bool current_sense = false;
 
 
@@ -102,9 +110,9 @@ void testsectclock(void);
 
 	};
 	
-Cl_AlarmIdType alarmmap[_SENSOR_MAX_INPUT] =
+Cl_NewAlarmIdType alarmmap[_ALARM_MAX_ID] =
 {
-	ALARM_NO_ALARM,//0x00, //0
+	_NO_ALARM,//0x00, //0
 	BLOODDOOR_STATUS_OPEN,//0x01
 	BYPASSDOOR_STATUS_OPEN,//0x02
 	HOLDER1STATUS_OPEN, // 0x3
@@ -119,22 +127,22 @@ Cl_AlarmIdType alarmmap[_SENSOR_MAX_INPUT] =
 	FLOW_LOW_FLOWRATE,//ox23
 	FLOW_LOW_FLOWRATE,//ox23
 	FLOW_HIGH_FLOWRATE,//0x24
-	LEVEL_SWITCH_STOPPED,//0x25
+	//LEVEL_SWITCH_STOPPED,//0x25
 	LEVEL_SWITCH_LOW_TOGGLERATE,//0x26
 	LEVEL_SWITCH_HIGH_TOGGLERATE,
-	TEMP1STATUS_HIGH,//0x16
-	TEMP1STATUS_LOW,//0x16
-	TEMP2STATUS_HIGH,//0x17
-	TEMP2STATUS_LOW,//0x17
-	TEMP3STATUS_HIGH,//0x18
-	TEMP3STATUS_LOW,//0x18
-	PS1STATUS_HIGH,//0x12
-	PS1STATUS_LOW,//0x122
-	PS2STATUS_HIGH,//0x13
-	PS2STATUS_LOW,//0x13
-	UF_ROTATION_MARKER,//0x1B
-	ALARM_MAX_ID, //26
-	ALARM_MAX_ID, //27
+	TEMP1_HIGH_THRESHOLD,//0x16
+	TEMP1_LOW_THRESHOLD,//0x16
+	SENSOR_TEMP2STATUS,//0x17
+	//TEMP2STATUS_LOW,//0x17
+	SENSOR_TEMP3STATUS,//0x18
+//	TEMP3STATUS_LOW,//0x18
+//	PS1STATUS_HIGH,//0x12
+	//PS1STATUS_LOW,//0x122
+	//PS2STATUS_HIGH,//0x13
+	//PS2STATUS_LOW,//0x13
+	//UF_ROTATION_MARKER,//0x1B
+	///ALARM_MAX_ID, //26
+	//ALARM_MAX_ID, //27
 	SYSTEM_NOT_READY,//28
 	POWER_FAILURE,//29
 	POWER_FAILURE , //30
@@ -157,7 +165,7 @@ extern uint32_t heater_duty ;
 bool iic_nack = false;
 static uint16_t uf_rotation_counter = 0;
 static int16_t avgtmp3   = 0;
-array_command_type cmd_backup;
+//array_command_type cmd_backup;
 Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 {
 	Cl_ReturnCodes cl_thretval = CL_ERROR;
@@ -221,14 +229,15 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 		prev_gate_status = TEST_STUB_ENABLEGATE;
 		TEST_STUB_ENABLEGATE = 1;
 		cl_testalarm_id = TestMsg.data.byte[1];
-		Cl_AlarmActivateAlarms(alarmmap[cl_testalarm_id],true);
+		//Cl_AlarmActivateAlarms(alarmmap[cl_testalarm_id],true);
+		Cl_AlarmActivateAlarms(cl_testalarm_id,true);
 		TEST_STUB_ENABLEGATE = prev_gate_status;
 		break;
 		case TEST_DISABLE_ALARM:
 		prev_gate_status = TEST_STUB_ENABLEGATE;
 		TEST_STUB_ENABLEGATE = 1;
 			cl_testalarm_id = TestMsg.data.byte[1];
-		Cl_AlarmActivateAlarms(alarmmap[cl_testalarm_id],false);
+		Cl_AlarmActivateAlarms(cl_testalarm_id,false);
 		TEST_STUB_ENABLEGATE = prev_gate_status;
 		
 		break;
@@ -236,8 +245,8 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 		prev_gate_status = TEST_STUB_ENABLEGATE;
 		TEST_STUB_ENABLEGATE = 1;
 		temp = 0;
-		while ( temp < _SENSOR_MAX_INPUT )
-		Cl_AlarmActivateAlarms(alarmmap[temp++],false);
+		while ( temp < _ALARM_MAX_ID )
+		Cl_AlarmActivateAlarms(temp++,false);
 		TEST_STUB_ENABLEGATE = 0;
 			static int16_t ms_count = 0;
 			cl_Datastreamtype cl_tdata;
@@ -480,6 +489,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 				pdataarray = (uint8_t *)"CS_POT_SET";
 				potvalue = (cl_indata.Twobyte * 1024)/10000;
 			sv_cs_setpotvalue(potvalue);
+			
 		}
 		if(TestMsg.data.byte[1] == 1)
 		{
@@ -494,7 +504,50 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 //	sv_cs_readpotvalue(&cl_indata.Twobyte);
 }
 	break;
-
+	case TEST_SET_COND_POT_VALUE:
+	//while (1)
+	{
+		cl_wait(10);
+		if(iic_nack)
+		{
+			//				Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"NACK",4);
+			iic_nack = false;
+		}
+		if(TestMsg.datasize == 3)
+		{
+			//rateval = (uint16_t)TestMsg.data[1];
+			cl_indata.bytearray[0] = TestMsg.data.byte[2];
+			
+			
+		}
+		else if(TestMsg.datasize == 4)
+		{
+			//rateval = (uint16_t)TestMsg.data[1];
+			cl_indata.bytearray[1] = TestMsg.data.byte[2];
+			cl_indata.bytearray[0] = TestMsg.data.byte[3];
+			
+		}
+		if(TestMsg.data.byte[1] == 2)
+		{
+			uint16_t potvalue = 0;
+			pdataarray = (uint8_t *)"CS_POT_SET";
+			potvalue = (cl_indata.Twobyte * 1024)/10000;
+			sv_cs_setcondpotvalue(potvalue);
+			
+		}
+		if(TestMsg.data.byte[1] == 1)
+		{
+			//set conductivity pot
+		}
+		
+		
+		//	cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,pdataarray,10);
+		//cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&cl_indata.Twobyte,2);
+		//	cl_wait(20);
+		cl_indata.word = 0;
+		//	sv_cs_readpotvalue(&cl_indata.Twobyte);
+	}
+	break;
 		case TEST_SET_FLOW_PUMPRATE ://23 0x17
 		cl_wait(100);
 		pdataarray = (uint8_t *)"FP_RATE";
@@ -811,7 +864,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 
 
 
-			   DD_IIC_SET_BLOODPUP( 0x60,  &bloodpumpspeed , 0x03);
+			   DD_IIC_SET_BLOODPUP( 0x0E,  &bloodpumpspeed , 0x03);
 
 	
 	
@@ -840,7 +893,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 
 
 
-			   DD_IIC_SET_BLOODPUP( 0x60,  &bloodpumpspeed1 , 0x03);
+			   DD_IIC_SET_BLOODPUP( 0x0E,  &bloodpumpspeed1 , 0x03);
 		break;
 		case  TEST_SET_CPU2_RESUME:
 				cl_wait(100);
@@ -853,7 +906,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 
 
 
-				DD_IIC_SET_BLOODPUP( 0x60,  &cpu2command , 0x01);
+				DD_IIC_SET_BLOODPUP( 0x0E,  &cpu2command , 0x01);
 		break;
 		case TEST_SET_VCLAMP_OFF://36 0x24
 		cl_wait(100);
@@ -1311,7 +1364,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 					Current_sense_trigger = true;
 					pdataarray = (uint8_t*) "CS_TRIGGER";
 					
-					Cl_AlarmActivateAlarms( PS3STATUS_HIGH,false );
+					Cl_AlarmActivateAlarms( PS3_HIGH_THRESHOLD,false );
 					Cl_AlarmActivateAlarms( FPCURRENTSTATUS,true );
 	//				cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,pdataarray,11);
 				}
@@ -1320,7 +1373,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 					Current_sense_trigger = false;
 					pdataarray = (uint8_t*) "PS_TRIGGER";
 					 Cl_AlarmActivateAlarms( FPCURRENTSTATUS,false );
-					 Cl_AlarmActivateAlarms( PS3STATUS_HIGH,true );
+					 Cl_AlarmActivateAlarms( PS3_HIGH_THRESHOLD,true );
 		//			cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,pdataarray,11);
 
 				} 
@@ -1363,7 +1416,22 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 							sv_cntrl_deactivate_valve(VALVE_ID4);
 						break;
 			case TEST_SHORT_RINSE:
-			 gtest_short_rinse  = (bool) TestMsg.data.byte[1];
+			#if 0
+			// gtest_short_rinse  = (bool) TestMsg.data.byte[1];
+			{
+							 uint8_t  test_hstate;
+							test_hstate = CL_HEATER_SUBSTATE_DISTRIBUTION;
+							Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_HEATER_STATE,(void*)&test_hstate,1);
+							Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_HEATER_STATE,(uint8_t*)&test_hstate,1);
+							
+							cl_Datastreamtype cl_tdata;
+							cl_tdata.word =0;
+							cl_tdata.Twobyte = test_hstate;
+							cl_tdata.bytearray[2] = 23;
+							Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT,&test_hstate,1);
+						}
+							
+			#endif
 			break;
 			 case TEST_SET_FLOW_SENSE_ENABLE:
 			 
@@ -1517,14 +1585,14 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 						switch(cl_indata.bytearray[3])
 						{
 							
-							case TEST_SENSOR_TEMP1:
+							case TEST_SENSOR_TEMP3:
 							if(cl_indata.bytearray[2]== 1)
 							{
-								Cl_alarmThresholdTable.temp1_high_threshold = cl_indata.Twobyte/10;								
+								Cl_alarmThresholdTable.temp3_high_threshold = cl_indata.Twobyte/10;								
 							}else
 							{
 								
-								Cl_alarmThresholdTable.temp1_low_threshold = cl_indata.Twobyte/10;
+								Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte/10;
 							}
 							break;
 							case TEST_SENSOR_APT:
@@ -1588,13 +1656,13 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 			case TEST_SENSOR_HP_1:
 			pdataarray = (uint8_t *)"HP_START=";
 			//int16_t heparin_start;
-			cl_testgetsensordata(HP_START,&sensordata);
+			cl_testgetsensordata(SENSOR_HP_START,&sensordata);
 	//		cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,pdataarray,9);
 	//		cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&sensordata,2);
 			
 			break;
 			case  TEST_SENSOR_HP_2:
-			cl_testgetsensordata(HP_END,&sensordata);
+			cl_testgetsensordata(SENSOR_HP_END,&sensordata);
 						pdataarray = (uint8_t *)"HP_END=";
 			//int16_t heparin_start;
 			
@@ -1603,7 +1671,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 			break;
 			case TEST_SENSOR_PS1:
 			
-			cl_testgetsensordata(PS1STATUS_HIGH,&sensordata);
+			cl_testgetsensordata(SENSOR_PS1STATUS,&sensordata);
 			pdataarray = (uint8_t *)"PS1=";
 		//	sensordatamillivolts = ((sensordata* 3300 /4096) ) - 870;
 			sensordatamillivolts = ((sensordata* 3300 /4096) ) ;
@@ -1637,7 +1705,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 			
 			break;
 			case TEST_SENSOR_PS2:
-			cl_testgetsensordata(PS2STATUS_HIGH,&sensordata);
+			cl_testgetsensordata(SENSOR_PS2STATUS,&sensordata);
 					pdataarray = (uint8_t *)"PS2=";
 			sensordatamillivolts = ((sensordata* 3300 /4096) ) ;
 			Pressuredatainmillibars =  ((sensordatamillivolts - 860)/0.78 ) ;
@@ -1669,7 +1737,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 
 			break;
 			case TEST_SENSOR_PS3:
-			cl_testgetsensordata(PS3STATUS_HIGH,&sensordata);
+			cl_testgetsensordata(PS3_HIGH_THRESHOLD,&sensordata);
 					pdataarray = (uint8_t *)"PS3=";
 			sensordatamillivolts = ((sensordata* 3300 /4096) ) ;
 		//	Pressuredatainmillibars =  (sensordatamillivolts/1.485 ) ;
@@ -1810,7 +1878,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 			break;
 			case TEST_SENSOR_TEMP1:
 
-			cl_testgetsensordata(TEMP1STATUS_HIGH,&sensordata);
+			cl_testgetsensordata(SENSOR_TEMP1STATUS,&sensordata);
 			{
 							int16_t temp,temp1;
 							temp = (0.8056 * sensordata) - 1450 ;
@@ -1825,7 +1893,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 			case TEST_SENSOR_TEMP2:
 			{
 				int16_t temp,temp1;
-			cl_testgetsensordata(TEMP2STATUS_HIGH,&sensordata);
+			cl_testgetsensordata(SENSOR_TEMP2STATUS,&sensordata);
 					
 					temp = (0.8056 * sensordata) - 1450 ;
 					temp1 = 3700 + (temp * 1000)/340;
@@ -1838,7 +1906,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 			case TEST_SENSOR_TEMP3:
 			{
 				int16_t temp,temp1;
-				cl_testgetsensordata(TEMP3STATUS_HIGH,&sensordata);
+				cl_testgetsensordata(SENSOR_TEMP3STATUS,&sensordata);
 				
 				
 				temp = (0.8056 * sensordata) - 1450 ;
@@ -1999,7 +2067,7 @@ if(dummy_currentsence)
 
 if(syncdone)
 {
-				cl_testgetsensordata(TEMP1STATUS_HIGH,&sensordata);
+				cl_testgetsensordata(SENSOR_TEMP1STATUS,&sensordata);
 				{
 					
 				int16_t temp,temp1;
@@ -2021,7 +2089,7 @@ if(syncdone)
 
 		
 		
-				cl_testgetsensordata(TEMP2STATUS_HIGH,&sensordata);
+				cl_testgetsensordata(SENSOR_TEMP2STATUS,&sensordata);
 				{
 					
 				int16_t temp,temp1;
@@ -2039,7 +2107,7 @@ if(syncdone)
 				
 			//		cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT,&cl_tdata,4);
 				}
-				cl_testgetsensordata(TEMP3STATUS_HIGH,&sensordata);
+				cl_testgetsensordata(SENSOR_TEMP3STATUS,&sensordata);
 				{
 					
 				int16_t temp,temp1;
@@ -2081,7 +2149,7 @@ if(syncdone)
 					
 				//	cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT,&cl_tdata,4);
 				}
-				cl_testgetsensordata(FLOWSTATUS_FLOWON,&sensordata);
+				cl_testgetsensordata(SENSOR_FLOW_SWITCH,&sensordata);
 				{
 					//	int16_t temp,temp1;
 					//	temp = (0.8056 * sensordata) - 1450 ;
@@ -2131,7 +2199,7 @@ if(syncdone)
 			//	cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&aptavg,2);
 
 	
-				cl_testgetsensordata(PS3STATUS_HIGH,&Ps3);
+				cl_testgetsensordata(SENSOR_PS3STATUS,&Ps3);
 				sensordatamillivolts = ((Ps3* 3300 /4096) ) ;
 				
 				//Pressuredatainmillibars =  ((sensordatamillivolts - 860)/0.78 ) ;
@@ -2147,7 +2215,7 @@ if(syncdone)
 				//	cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT,&cl_tdata,4);
 				/////////////////
 				
-				cl_testgetsensordata(PS2STATUS_HIGH,&Ps2);
+				cl_testgetsensordata(SENSOR_PS2STATUS,&Ps2);
 			sensordatamillivolts = ((Ps2* 3300 /4096) ) ;
 				
 				//Pressuredatainmillibars =  ((sensordatamillivolts - 860)/0.78 ) ;
@@ -2168,7 +2236,7 @@ if(syncdone)
 				
 				
 				
-				cl_testgetsensordata(PS1STATUS_HIGH,&Ps1);
+				cl_testgetsensordata(SENSOR_PS1STATUS,&Ps1);
 				sensordatamillivolts = ((Ps1* 3300 /4096) ) ;
 				
 				//Pressuredatainmillibars =  ((sensordatamillivolts - 860)/0.78 ) ;
@@ -2303,7 +2371,7 @@ void Cl_tg_prick_50ms(void)
 		
 		if ((BC_FLAG) && (capture_started))
 			{
-				cl_testgetsensordata(PS3STATUS_HIGH,&Ps);
+				cl_testgetsensordata(SENSOR_PS3STATUS,&Ps);
 				sensordatamillivolts = ((Ps* 3300 /4096) ) ;
 				Pressuredatainmillibars =  (sensordatamillivolts/1.485) ;
 		ps1Pressuredatainmillibars = Pressuredatainmillibars;//1000;
@@ -2394,7 +2462,7 @@ void pinclock1(void) // 5 ms clock
 		
 
 	//cl_testgetsensordata(UF_ROTATION_MARKER,&uf_rotataion_marker);
-cl_testgetsensordata(UF_ROTATION_MARKER,&uf_rotataion_marker);
+cl_testgetsensordata(SENSOR_UFP_FB,&uf_rotataion_marker);
 if(prev_uf_rotataion_marker != uf_rotataion_marker)
 {
 	
@@ -2467,8 +2535,16 @@ void testsectclock(void)
 	int16_t hold1 = 0, hold2=0,blood_door = 0;
 	float temp = 0,temp1;
 	uint16_t int_temp;
-	
-		
+
+				Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP2STATUS, &int_temp);
+				temp = int_temp * 0.805;
+				calibration_tmp(temp,TS2);
+
+	if(temprature_final_value_2 > 45)
+	{
+		sv_cntrl_poweroffheater();
+		SetHeaterState(CL_HEATER_STATE_OFF);
+	}
 		
 	
 }

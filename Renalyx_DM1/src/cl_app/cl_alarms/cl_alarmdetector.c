@@ -26,12 +26,12 @@ extern Flowswitch_msgType Flowswitch_msg;
 
 static uint32_t prev_flowstatus = 0;
 static uint32_t flow_watchdog = 0,flow_count=0,flow_count_rate = 0;
-Cl_AlarmStructType Cl_alarms_alarms[ALARM_MAX_ID];
-Cl_AlarmIdType  cl_lastalarmid;
+Cl_AlarmStructType Cl_alarms_alarms[_ALARM_MAX_ID];
+Cl_NewAlarmIdType  cl_lastalarmid;
 static levelswitchprevstatus = 1;
 extern  uint32_t flowstatus_off_alarm_count = 0;// testing
-Cl_AlarmIdType cond_alarm = CL_COND_ALARM_NO_ALARM;
-Cl_AlarmIdType dac_cond_alarm = CL_DAC_COND_ALARM_NO_ALARM;
+Cl_NewAlarmIdType cond_alarm = CL_COND_ALARM_NO_ALARM;
+Cl_NewAlarmIdType dac_cond_alarm = CL_DAC_COND_ALARM_NO_ALARM;
 bool cl_alarm_triggered = false;
 int16_t ps3_threshold = 4096;
 Cl_AlarmThresholdType  Cl_alarmThresholdTable;
@@ -53,16 +53,16 @@ Cl_ReturnCodes Cl_Init_Alarms(void);
 Cl_ReturnCodes Cl_alarms_scanforAlarms(void);
 Cl_ReturnCodes Cl_translate_sensor_values(void);
 Cl_ReturnCodes Cl_LoadAlarmThresholdTable(void);
-Cl_ReturnCodes Cl_AlarmActivateAlarms(Cl_AlarmIdType, bool  );
-Cl_ReturnCodes Cl_AlarmMuteAlarms(Cl_AlarmIdType cl_alarm_id);
-Cl_ReturnCodes Cl_GetLastAlarm(Cl_AlarmIdType cl_alarm_id);
-Cl_ReturnCodes Cl_Alarm_GetAlarmStatus(Cl_AlarmIdType  , bool* );
+Cl_ReturnCodes Cl_AlarmActivateAlarms(Cl_NewAlarmIdType, bool  );
+Cl_ReturnCodes Cl_AlarmMuteAlarms(Cl_NewAlarmIdType cl_alarm_id);
+Cl_ReturnCodes Cl_GetLastAlarm(Cl_NewAlarmIdType cl_alarm_id);
+Cl_ReturnCodes Cl_Alarm_GetAlarmStatus(Cl_NewAlarmIdType  , bool* );
 Cl_ReturnCodes Cl_UpdateMacAlarmEventTable(void);
-Cl_ReturnCodes Cl_AlarmResetAlarm(Cl_AlarmIdType cl_alarm_id );
-Cl_ReturnCodes Cl_Alarm_TriggerDummyAlarm(Cl_AlarmIdType cl_alarm_id , bool cl_status);
-Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_AlarmIdType cl_alarm_id , bool cl_status);
+Cl_ReturnCodes Cl_AlarmResetAlarm(Cl_NewAlarmIdType cl_alarm_id );
+Cl_ReturnCodes Cl_Alarm_TriggerDummyAlarm(Cl_NewAlarmIdType cl_alarm_id , bool cl_status);
+Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_NewAlarmIdType cl_alarm_id , bool cl_status);
 Cl_ReturnCodes Cl_Alarm_timmer_50millisec(void);
-Cl_ReturnCodes Cl_AlarmConfigureAlarmType(Cl_AlarmIdType,Cl_AlarmTriggerType,uint16_t,uint16_t,uint8_t);
+Cl_ReturnCodes Cl_AlarmConfigureAlarmType(Cl_NewAlarmIdType,Cl_AlarmTriggerType,uint16_t,uint16_t,uint8_t);
 
 
 
@@ -211,43 +211,43 @@ Cl_ReturnCodes Cl_alarms_scanforAlarms(void)
 	 Cl_translate_sensor_values();
 	
 	
-	if(Cl_alarms_alarms[ABDSTATUS_ON].cl_is_enabled)
+	if(Cl_alarms_alarms[ABD_EVENT].cl_is_enabled)
 	{
 		if(cl_sys_statbuffer.abdstatus)
 		{
-			Cl_alarms_alarms[ABDSTATUS_ON].cl_alarmstate = CL_ALARM_DETECTED;
-			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=ABDSTATUS_ON; 
-			Cl_alarms_alarms[ABDSTATUS_ON].cl_detected_count++;
+			Cl_alarms_alarms[ABD_EVENT].cl_alarmstate = CL_ALARM_DETECTED;
+			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=ABD_EVENT; 
+			Cl_alarms_alarms[ABD_EVENT].cl_detected_count++;
 			cl_alarm_triggered = true;
-			cl_lastalarmid = ABDSTATUS_ON;
+			cl_lastalarmid = ABD_EVENT;
 			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 			Cl_UpdateMacAlarmEventTable();
 		}
 	
 	}
-	if(Cl_alarms_alarms[BDSTATUS_ON].cl_is_enabled)
+	if(Cl_alarms_alarms[BD_EVENT].cl_is_enabled)
 	{
 		if(cl_sys_statbuffer.bdstatus)
 		{
-			Cl_alarms_alarms[BDSTATUS_ON].cl_alarmstate = CL_ALARM_DETECTED;
-			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=BDSTATUS_ON; 
-			Cl_alarms_alarms[BDSTATUS_ON].cl_detected_count++;
+			Cl_alarms_alarms[BD_EVENT].cl_alarmstate = CL_ALARM_DETECTED;
+			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=BD_EVENT; 
+			Cl_alarms_alarms[BD_EVENT].cl_detected_count++;
 			cl_alarm_triggered = true;
-			cl_lastalarmid = BDSTATUS_ON;
+			cl_lastalarmid = BD_EVENT;
 			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 			Cl_UpdateMacAlarmEventTable();
 			
 		}
 	}
-	if(Cl_alarms_alarms[BLDSTATUS_ON].cl_is_enabled)
+	if(Cl_alarms_alarms[BLD_EVENT].cl_is_enabled)
 	{
 				if(cl_sys_statbuffer.bldstatus)
 				{
-					Cl_alarms_alarms[BLDSTATUS_ON].cl_alarmstate = CL_ALARM_DETECTED;
-					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=BLDSTATUS_ON; 
-					Cl_alarms_alarms[BLDSTATUS_ON].cl_detected_count++;
+					Cl_alarms_alarms[BLD_EVENT].cl_alarmstate = CL_ALARM_DETECTED;
+					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=BLD_EVENT; 
+					Cl_alarms_alarms[BLD_EVENT].cl_detected_count++;
 					cl_alarm_triggered = true;
-					cl_lastalarmid = BLDSTATUS_ON;
+					cl_lastalarmid = BLD_EVENT;
 					Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 					Cl_UpdateMacAlarmEventTable();
 					
@@ -456,7 +456,7 @@ if(Cl_alarms_alarms[HOLDER2STATUS_OPEN].cl_is_enabled)
 						
 	}
 
-	
+	/*
 	if(Cl_alarms_alarms[DGPCURRENTSTATUS].cl_is_enabled)
 	{
 				if(cl_sys_statbuffer.DGPcurrentstatus == 0)
@@ -502,7 +502,8 @@ if(Cl_alarms_alarms[HOLDER2STATUS_OPEN].cl_is_enabled)
 									
 					}
 	}
-
+*/
+/*
 	if(Cl_alarms_alarms[HP_START].cl_is_enabled)
 	{
 
@@ -513,7 +514,7 @@ if(Cl_alarms_alarms[HOLDER2STATUS_OPEN].cl_is_enabled)
 	}
 
 
-
+*/
 			
 	//if(Cl_alarms_alarms[FLOWSTATUS_FLOWON].cl_is_enabled)
 	{
@@ -608,17 +609,17 @@ if(Cl_alarms_alarms[HOLDER2STATUS_OPEN].cl_is_enabled)
 	}
 
 	
-	if(Cl_alarms_alarms[PS1STATUS_HIGH].cl_is_enabled)
+	if(Cl_alarms_alarms[PS1_HIGH_THRESHOLD].cl_is_enabled)
 	{
-		if (Cl_alarms_alarms[PS1STATUS_HIGH].cl_alarmstate != CL_ALARM_DETECTED)
+		if (Cl_alarms_alarms[PS1_HIGH_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 		{
 				if(ps1 > Cl_alarmThresholdTable.ps1_high_threshold)
 				{
-					Cl_alarms_alarms[PS1STATUS_HIGH].cl_alarmstate = CL_ALARM_DETECTED;	
-					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS1STATUS_HIGH;
-					Cl_alarms_alarms[PS1STATUS_HIGH].cl_detected_count++;
+					Cl_alarms_alarms[PS1_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;	
+					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS1_HIGH_THRESHOLD;
+					Cl_alarms_alarms[PS1_HIGH_THRESHOLD].cl_detected_count++;
 					cl_alarm_triggered = true;
-					cl_lastalarmid = PS1STATUS_HIGH;
+					cl_lastalarmid = PS1_HIGH_THRESHOLD;
 					Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 					Cl_UpdateMacAlarmEventTable();
 				}
@@ -629,17 +630,17 @@ if(Cl_alarms_alarms[HOLDER2STATUS_OPEN].cl_is_enabled)
 		}
 	}
 
-if(Cl_alarms_alarms[PS1STATUS_LOW].cl_is_enabled)
+if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 {
-	if (Cl_alarms_alarms[PS1STATUS_LOW].cl_alarmstate != CL_ALARM_DETECTED)
+	if (Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 	{
 		if(ps1 < Cl_alarmThresholdTable.ps1_low_threshold)
 		{
-			Cl_alarms_alarms[PS1STATUS_LOW].cl_alarmstate = CL_ALARM_DETECTED;
-			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS1STATUS_LOW;
-			Cl_alarms_alarms[PS1STATUS_LOW].cl_detected_count++;
+			Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
+			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS1_LOW_THRESHOLD;
+			Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_detected_count++;
 			cl_alarm_triggered = true;
-			cl_lastalarmid = PS1STATUS_LOW;
+			cl_lastalarmid = PS1_LOW_THRESHOLD;
 			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 			Cl_UpdateMacAlarmEventTable();
 		}
@@ -649,9 +650,9 @@ if(Cl_alarms_alarms[PS1STATUS_LOW].cl_is_enabled)
 		}
 	}
 }
-	if(Cl_alarms_alarms[PS2STATUS_HIGH].cl_is_enabled)
+	if(Cl_alarms_alarms[PS2_HIGH_THRESHOLD].cl_is_enabled)
 	{
-				if (Cl_alarms_alarms[PS2STATUS_HIGH].cl_alarmstate != CL_ALARM_DETECTED)
+				if (Cl_alarms_alarms[PS2_HIGH_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 		{
 				if(ps2 > Cl_alarmThresholdTable.ps2_high_threshold)
 				{
@@ -661,28 +662,28 @@ if(Cl_alarms_alarms[PS1STATUS_LOW].cl_is_enabled)
 							 Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS2=",4);
 							 Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 												
-					Cl_alarms_alarms[PS2STATUS_HIGH].cl_alarmstate = CL_ALARM_DETECTED;	
-					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS2STATUS_HIGH;
-					Cl_alarms_alarms[PS2STATUS_HIGH].cl_detected_count++;
+					Cl_alarms_alarms[PS2_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;	
+					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS2_HIGH_THRESHOLD;
+					Cl_alarms_alarms[PS2_HIGH_THRESHOLD].cl_detected_count++;
 					cl_alarm_triggered = true;
-					cl_lastalarmid = PS2STATUS_HIGH;
+					cl_lastalarmid = PS2_HIGH_THRESHOLD;
 					Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 					Cl_UpdateMacAlarmEventTable();
 					
 				}
 		}
 	}
-		if(Cl_alarms_alarms[PS2STATUS_LOW].cl_is_enabled)
+		if(Cl_alarms_alarms[PS2_LOW_THRESHOLD].cl_is_enabled)
 		{
-			if (Cl_alarms_alarms[PS2STATUS_LOW].cl_alarmstate != CL_ALARM_DETECTED)
+			if (Cl_alarms_alarms[PS2_LOW_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 			{
 				if(ps2 < Cl_alarmThresholdTable.ps2_low_threshold)
 				{
-					Cl_alarms_alarms[PS2STATUS_LOW].cl_alarmstate = CL_ALARM_DETECTED;
-					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS2STATUS_HIGH;
-					Cl_alarms_alarms[PS2STATUS_LOW].cl_detected_count++;
+					Cl_alarms_alarms[PS2_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
+					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS2_LOW_THRESHOLD;
+					Cl_alarms_alarms[PS2_LOW_THRESHOLD].cl_detected_count++;
 					cl_alarm_triggered = true;
-					cl_lastalarmid = PS2STATUS_LOW;
+					cl_lastalarmid = PS2_LOW_THRESHOLD;
 					Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 					Cl_UpdateMacAlarmEventTable();
 					
@@ -691,48 +692,48 @@ if(Cl_alarms_alarms[PS1STATUS_LOW].cl_is_enabled)
 		}
 		
 
-	if(Cl_alarms_alarms[PS3STATUS_HIGH].cl_is_enabled)
+	if(Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_is_enabled)
 		{
 			//	if((cl_sys_statbuffer.ps3status > 1474) && (Cl_alarms_alarms[PS3STATUS_HIGH].cl_alarmstate != CL_ALARM_DETECTED)) // eqvt to 0.8 bar
-				if((ps3 > Cl_alarmThresholdTable.ps3_high_threshold ) && (Cl_alarms_alarms[PS3STATUS_HIGH].cl_alarmstate != CL_ALARM_DETECTED)) // eqvt to 0.8 bar
+				if((ps3 > Cl_alarmThresholdTable.ps3_high_threshold ) && (Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)) // eqvt to 0.8 bar
 				{
-				Cl_alarms_alarms[PS3STATUS_HIGH].cl_alarmstate = CL_ALARM_DETECTED;
-				Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS3STATUS_HIGH;
-				Cl_alarms_alarms[PS3STATUS_HIGH].cl_detected_count++;
+				Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
+				Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS3_HIGH_THRESHOLD;
+				Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_detected_count++;
 				cl_alarm_triggered = true;
-				cl_lastalarmid = PS3STATUS_HIGH;
+				cl_lastalarmid = PS3_HIGH_THRESHOLD;
 				Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALERT_TRIGGERED ;
 				Cl_UpdateMacAlarmEventTable();
 				}
 				
-				else if ((Cl_alarms_alarms[PS3STATUS_HIGH].cl_alarmstate == CL_ALARM_DETECTED) && (cl_sys_statbuffer.ps3status < Cl_alarmThresholdTable.ps3_high_threshold - 200  ))
+				else if ((Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED) && (cl_sys_statbuffer.ps3status < Cl_alarmThresholdTable.ps3_high_threshold - 200  ))
 				{
-					Cl_alarms_alarms[PS3STATUS_HIGH].cl_alarmstate = CL_ALARM_INACTIVE;
+					Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
 				}
 		}
 	
-	if(Cl_alarms_alarms[PS3STATUS_LOW].cl_is_enabled)
+	if(Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_is_enabled)
 	{
 		//	if((cl_sys_statbuffer.ps3status > 1474) && (Cl_alarms_alarms[PS3STATUS_HIGH].cl_alarmstate != CL_ALARM_DETECTED)) // eqvt to 0.8 bar
-		if((ps3 < Cl_alarmThresholdTable.ps3_low_threshold ) && (Cl_alarms_alarms[PS3STATUS_LOW].cl_alarmstate != CL_ALARM_DETECTED)) // eqvt to 0.8 bar
+		if((ps3 < Cl_alarmThresholdTable.ps3_low_threshold ) && (Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)) // eqvt to 0.8 bar
 		{
-			Cl_alarms_alarms[PS3STATUS_LOW].cl_alarmstate = CL_ALARM_DETECTED;
-			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS3STATUS_LOW;
-			Cl_alarms_alarms[PS3STATUS_LOW].cl_detected_count++;
+			Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
+			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS3_LOW_THRESHOLD;
+			Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_detected_count++;
 			cl_alarm_triggered = true;
-			cl_lastalarmid = PS3STATUS_LOW;
+			cl_lastalarmid = PS3_LOW_THRESHOLD;
 			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALERT_TRIGGERED ;
 			Cl_UpdateMacAlarmEventTable();
 		}
 		
-		else if ((Cl_alarms_alarms[PS3STATUS_LOW].cl_alarmstate == CL_ALARM_DETECTED) && (cl_sys_statbuffer.ps3status < Cl_alarmThresholdTable.ps3_low_threshold - 200 ))
+		else if ((Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED) && (cl_sys_statbuffer.ps3status < Cl_alarmThresholdTable.ps3_low_threshold - 200 ))
 		{
-			Cl_alarms_alarms[PS3STATUS_LOW].cl_alarmstate = CL_ALARM_INACTIVE;
+			Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
 		}
 	}
 	
 	
-	if(Cl_alarms_alarms[TEMP1STATUS_HIGH].cl_is_enabled)
+	if(Cl_alarms_alarms[TEMP1_HIGH_THRESHOLD].cl_is_enabled)
 	{
 			//	int16_t temp1,temp2;
 			//	temp1 = (0.805 * cl_sys_statbuffer.Temp1status) - 1004 ;
@@ -742,11 +743,11 @@ if(Cl_alarms_alarms[PS1STATUS_LOW].cl_is_enabled)
 			if(temp1 > Cl_alarmThresholdTable.temp1_high_threshold)
 			{
 
-				Cl_alarms_alarms[TEMP1STATUS_HIGH].cl_alarmstate = CL_ALARM_DETECTED;
-				Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP1STATUS_HIGH;
-				Cl_alarms_alarms[TEMP1STATUS_HIGH].cl_detected_count++;
+				Cl_alarms_alarms[TEMP1_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
+				Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP1_HIGH_THRESHOLD;
+				Cl_alarms_alarms[TEMP1_HIGH_THRESHOLD].cl_detected_count++;
 				cl_alarm_triggered = true;
-				cl_lastalarmid = TEMP1STATUS_HIGH;
+				cl_lastalarmid = TEMP1_HIGH_THRESHOLD;
 				Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 				Cl_UpdateMacAlarmEventTable();
 						
@@ -754,7 +755,7 @@ if(Cl_alarms_alarms[PS1STATUS_LOW].cl_is_enabled)
 	}
 	
 	
-	if(Cl_alarms_alarms[TEMP1STATUS_LOW].cl_is_enabled)
+	if(Cl_alarms_alarms[TEMP1_LOW_THRESHOLD].cl_is_enabled)
 	{
 			//	int16_t temp1,temp2;
 			//	temp1 = (0.805 * cl_sys_statbuffer.Temp1status) - 1004 ;
@@ -764,43 +765,44 @@ if(Cl_alarms_alarms[PS1STATUS_LOW].cl_is_enabled)
 			if(temp1 < Cl_alarmThresholdTable.temp1_low_threshold)
 			{
 
-				Cl_alarms_alarms[TEMP1STATUS_LOW].cl_alarmstate = CL_ALARM_DETECTED;
-				Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP1STATUS_LOW;
-				Cl_alarms_alarms[TEMP1STATUS_LOW].cl_detected_count++;
+				Cl_alarms_alarms[TEMP1_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
+				Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP1_LOW_THRESHOLD;
+				Cl_alarms_alarms[TEMP1_LOW_THRESHOLD].cl_detected_count++;
 				cl_alarm_triggered = true;
-				cl_lastalarmid = TEMP1STATUS_LOW;
+				cl_lastalarmid = TEMP1_LOW_THRESHOLD;
 				Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 				Cl_UpdateMacAlarmEventTable();
 						
 			}
+			else
 			{	
-				if(Cl_alarms_alarms[TEMP1STATUS_LOW].cl_alarmstate == CL_ALARM_DETECTED)
+				if(Cl_alarms_alarms[TEMP1_LOW_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED)
 				{												
-					Cl_alarms_alarms[TEMP1STATUS_LOW].cl_alarmstate = CL_ALARM_INACTIVE;
-					Cl_alarms_alarms[TEMP1STATUS_LOW].cl_detected_count = 0;
+					Cl_alarms_alarms[TEMP1_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
+					Cl_alarms_alarms[TEMP1_LOW_THRESHOLD].cl_detected_count = 0;
 					cl_alarm_triggered = false;	
 				}						
 			}
 	}
 	
 	
-	if(Cl_alarms_alarms[TEMP3STATUS_HIGH].cl_is_enabled)
+	if(Cl_alarms_alarms[TEMP3_HIGH_THRESHOLD].cl_is_enabled)
 		{
 			//	int16_t temp1,temp2;
 			//	temp1 = (0.805 * cl_sys_statbuffer.Temp3status) - 1004 ;
 			//	temp2 = 3000 + (temp1 * 1000)/382;
 			if(temp3 > Cl_alarmThresholdTable.temp3_high_threshold)
-		//	if(temp2 > Cl_alarms_alarms[TEMP3STATUS_HIGH].cl_upper)
+		//	if(temp2 > Cl_alarms_alarms[SENSOR_TEMP3STATUS].cl_upper)
 		//	if(cl_sys_statbuffer.Temp3status > 405)
 			{
-				if(Cl_alarms_alarms[TEMP3STATUS_HIGH].cl_alarmstate != CL_ALARM_DETECTED)
+				if(Cl_alarms_alarms[TEMP3_HIGH_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 				{
-					Cl_alarms_alarms[TEMP3STATUS_HIGH].cl_alarmstate = CL_ALARM_DETECTED;
-					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP3STATUS_HIGH;
-					Cl_alarms_alarms[TEMP3STATUS_HIGH].cl_detected_count++;
+					Cl_alarms_alarms[TEMP3_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
+					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP3_HIGH_THRESHOLD;
+					Cl_alarms_alarms[TEMP3_HIGH_THRESHOLD].cl_detected_count++;
 					cl_alarm_triggered = true;
 					
-					cl_lastalarmid = TEMP3STATUS_HIGH;
+					cl_lastalarmid = TEMP3_HIGH_THRESHOLD;
 					Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 					Cl_UpdateMacAlarmEventTable();
 				}						
@@ -809,28 +811,28 @@ if(Cl_alarms_alarms[PS1STATUS_LOW].cl_is_enabled)
 				else 
 			//	else if (cl_sys_statbuffer.Temp3status > 400)
 				{	
-					if(Cl_alarms_alarms[TEMP3STATUS_HIGH].cl_alarmstate == CL_ALARM_DETECTED)
+					if(Cl_alarms_alarms[TEMP3_HIGH_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED)
 					{												
-						Cl_alarms_alarms[TEMP3STATUS_HIGH].cl_alarmstate = CL_ALARM_INACTIVE;
-						Cl_alarms_alarms[TEMP3STATUS_HIGH].cl_detected_count = 0;
+						Cl_alarms_alarms[TEMP3_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
+						Cl_alarms_alarms[TEMP3_HIGH_THRESHOLD].cl_detected_count = 0;
 						cl_alarm_triggered = false;	
 					}						
 				}
 				}
-	if(Cl_alarms_alarms[TEMP3STATUS_LOW].cl_is_enabled)
+	if(Cl_alarms_alarms[TEMP3_LOW_THRESHOLD].cl_is_enabled)
 	{
 			 if (temp3 < Cl_alarmThresholdTable.temp3_low_threshold)
 		//	else if (cl_sys_statbuffer.Temp3status < 395)
 				{
 			
-							if(Cl_alarms_alarms[TEMP3STATUS_LOW].cl_alarmstate != CL_ALARM_DETECTED)
+							if(Cl_alarms_alarms[TEMP3_LOW_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 							{
-								Cl_alarms_alarms[TEMP3STATUS_LOW].cl_alarmstate = CL_ALARM_DETECTED;
-								Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP3STATUS_LOW;
-								Cl_alarms_alarms[TEMP3STATUS_LOW].cl_detected_count++;
+								Cl_alarms_alarms[TEMP3_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
+								Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP3_LOW_THRESHOLD;
+								Cl_alarms_alarms[TEMP3_LOW_THRESHOLD].cl_detected_count++;
 								cl_alarm_triggered = true;
 						
-								cl_lastalarmid = TEMP3STATUS_LOW;
+								cl_lastalarmid = TEMP3_LOW_THRESHOLD;
 								Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 								Cl_UpdateMacAlarmEventTable();
 						
@@ -839,10 +841,10 @@ if(Cl_alarms_alarms[PS1STATUS_LOW].cl_is_enabled)
 				else
 				{
 									
-							if(Cl_alarms_alarms[TEMP3STATUS_LOW].cl_alarmstate == CL_ALARM_DETECTED)
+							if(Cl_alarms_alarms[TEMP3_LOW_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED)
 							{
-								Cl_alarms_alarms[TEMP3STATUS_LOW].cl_alarmstate = CL_ALARM_INACTIVE;
-								Cl_alarms_alarms[TEMP3STATUS_LOW].cl_detected_count = 0;
+								Cl_alarms_alarms[TEMP3_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
+								Cl_alarms_alarms[TEMP3_LOW_THRESHOLD].cl_detected_count = 0;
 								cl_alarm_triggered = false;
 							}
 									
@@ -852,7 +854,7 @@ if(Cl_alarms_alarms[PS1STATUS_LOW].cl_is_enabled)
 		}
 
 
-if(Cl_alarms_alarms[TEMP2STATUS_HIGH].cl_is_enabled)
+if(Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_is_enabled)
 {
 	
 	//		int16_t temp1,temp2;
@@ -863,14 +865,14 @@ if(Cl_alarms_alarms[TEMP2STATUS_HIGH].cl_is_enabled)
 //	if(cl_sys_statbuffer.Temp2status > 840)
 	{
 	
-		if(Cl_alarms_alarms[TEMP2STATUS_HIGH].cl_alarmstate != CL_ALARM_DETECTED)
+		if(Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 		{
-			Cl_alarms_alarms[TEMP2STATUS_HIGH].cl_alarmstate = CL_ALARM_DETECTED;
-			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP2STATUS_HIGH;
-			Cl_alarms_alarms[TEMP2STATUS_HIGH].cl_detected_count++;
+			Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
+			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP2_HIGH_THRESHOLD;
+			Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_detected_count++;
 			cl_alarm_triggered = true;
 			
-			cl_lastalarmid = TEMP2STATUS_HIGH;
+			cl_lastalarmid = TEMP2_HIGH_THRESHOLD;
 			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 			Cl_UpdateMacAlarmEventTable();
 			
@@ -881,10 +883,10 @@ if(Cl_alarms_alarms[TEMP2STATUS_HIGH].cl_is_enabled)
 	//	else if (cl_sys_statbuffer.Temp3status > 400)
 	{
 
-			if(Cl_alarms_alarms[TEMP2STATUS_HIGH].cl_alarmstate == CL_ALARM_DETECTED)
+			if(Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED)
 			{
-				Cl_alarms_alarms[TEMP2STATUS_HIGH].cl_alarmstate = CL_ALARM_INACTIVE;
-				Cl_alarms_alarms[TEMP2STATUS_HIGH].cl_detected_count = 0;
+				Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
+				Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_detected_count = 0;
 				cl_alarm_triggered = false;
 			}
 
@@ -892,21 +894,21 @@ if(Cl_alarms_alarms[TEMP2STATUS_HIGH].cl_is_enabled)
 		
 	}
 }
-if(Cl_alarms_alarms[TEMP2STATUS_LOW].cl_is_enabled)
+if(Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_is_enabled)
 {
 	
 	 if (temp2 < Cl_alarmThresholdTable.temp2_low_threshold)
 		{
 			
 		
-		if(Cl_alarms_alarms[TEMP2STATUS_LOW].cl_alarmstate != CL_ALARM_DETECTED)
+		if(Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 		{
-			Cl_alarms_alarms[TEMP2STATUS_LOW].cl_alarmstate = CL_ALARM_DETECTED;
-			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP2STATUS_LOW;
-			Cl_alarms_alarms[TEMP2STATUS_LOW].cl_detected_count++;
+			Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
+			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP2_LOW_THRESHOLD;
+			Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_detected_count++;
 			cl_alarm_triggered = true;
 			
-			cl_lastalarmid = TEMP2STATUS_LOW;
+			cl_lastalarmid = TEMP2_LOW_THRESHOLD;
 			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 			Cl_UpdateMacAlarmEventTable();
 			
@@ -918,7 +920,7 @@ if(Cl_alarms_alarms[TEMP2STATUS_LOW].cl_is_enabled)
 			
 	if((Cl_alarms_alarms[COND_DAC_OPEN].cl_is_enabled) || (Cl_alarms_alarms[COND_DAC_RO].cl_is_enabled) || (Cl_alarms_alarms[COND_DAC_HIGH].cl_is_enabled) )
 	{
-			dac_cond_alarm = ALARM_NO_ALARM;
+			dac_cond_alarm = _NO_ALARM;
 			cl_get_dac_conductivity_info(&dac_cond_alarm);
 				switch(dac_cond_alarm)
 				{
@@ -962,7 +964,7 @@ if(Cl_alarms_alarms[TEMP2STATUS_LOW].cl_is_enabled)
 		
 	if((Cl_alarms_alarms[COND_STATUS_LOW].cl_is_enabled) || (Cl_alarms_alarms[COND_STATUS_HIGH].cl_is_enabled))
 	{
-		cond_alarm = ALARM_NO_ALARM;
+		cond_alarm = _NO_ALARM;
 		cl_get_conductivity_info(&cond_alarm);
 		switch(cond_alarm)
 		{
@@ -1007,7 +1009,7 @@ if(Cl_alarms_alarms[TEMP2STATUS_LOW].cl_is_enabled)
 
 if (  gflow_en)//testing
 {
-	if((Cl_alarms_alarms[FLOWSTATUS_FLOWON].cl_is_enabled)|| (Cl_alarms_alarms[FLOWSTATUS_FLOWOFF].cl_is_enabled))
+	if((Cl_alarms_alarms[FLOW_NO_FLOW].cl_is_enabled)|| (Cl_alarms_alarms[FLOW_LOW_FLOWRATE].cl_is_enabled)|| (Cl_alarms_alarms[FLOW_HIGH_FLOWRATE].cl_is_enabled))
 	{
 
 		if(cl_sys_statbuffer.Flowstatus != prev_flowstatus )
@@ -1027,17 +1029,17 @@ if (  gflow_en)//testing
 			//if(flow_watchdog < 999400)static uint32_t flowstatus_off_alarm_count = 0;static uint32_t flowstatus_off_alarm_count = 0;
 			if(flow_watchdog > 40 )
 			{
-				if(Cl_alarms_alarms[FLOWSTATUS_FLOWOFF].cl_alarmstate != CL_ALARM_DETECTED)
+				if(Cl_alarms_alarms[FLOW_NO_FLOW].cl_alarmstate != CL_ALARM_DETECTED)
 				{
-					Cl_alarms_alarms[FLOWSTATUS_FLOWOFF].cl_alarmstate = CL_ALARM_DETECTED;
-					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=FLOWSTATUS_FLOWOFF;
-					Cl_alarms_alarms[FLOWSTATUS_FLOWOFF].cl_detected_count++;
+					Cl_alarms_alarms[FLOW_NO_FLOW].cl_alarmstate = CL_ALARM_DETECTED;
+					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=FLOW_NO_FLOW;
+					Cl_alarms_alarms[FLOW_NO_FLOW].cl_detected_count++;
 					
-					Cl_alarms_alarms[FLOWSTATUS_FLOWON].cl_alarmstate = CL_ALARM_INACTIVE;
+					Cl_alarms_alarms[FLOW_NO_FLOW].cl_alarmstate = CL_ALARM_INACTIVE;
 				
 					cl_alarm_triggered = true;
 					
-					cl_lastalarmid = FLOWSTATUS_FLOWOFF;
+					cl_lastalarmid = FLOW_NO_FLOW;
 			//		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"FLOW_OFF",8);
 					
 					Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALERT_TRIGGERED ;
@@ -1050,17 +1052,17 @@ if (  gflow_en)//testing
 				
 				
 				
-				if(Cl_alarms_alarms[FLOWSTATUS_FLOWON].cl_alarmstate != CL_ALARM_DETECTED)
+				if(Cl_alarms_alarms[FLOW_HIGH_FLOWRATE].cl_alarmstate != CL_ALARM_DETECTED)
 				{
-					Cl_alarms_alarms[FLOWSTATUS_FLOWON].cl_alarmstate = CL_ALARM_DETECTED;
-					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=FLOWSTATUS_FLOWON;
-					Cl_alarms_alarms[FLOWSTATUS_FLOWON].cl_detected_count++;
+					Cl_alarms_alarms[FLOW_HIGH_FLOWRATE].cl_alarmstate = CL_ALARM_DETECTED;
+					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=FLOW_HIGH_FLOWRATE;
+					Cl_alarms_alarms[FLOW_HIGH_FLOWRATE].cl_detected_count++;
 					
-					Cl_alarms_alarms[FLOWSTATUS_FLOWOFF].cl_alarmstate = CL_ALARM_INACTIVE;
+					Cl_alarms_alarms[FLOW_HIGH_FLOWRATE].cl_alarmstate = CL_ALARM_INACTIVE;
 					
 					cl_alarm_triggered = true;
 					
-					cl_lastalarmid = FLOWSTATUS_FLOWON;
+					cl_lastalarmid = FLOW_HIGH_FLOWRATE;
 					Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALERT_TRIGGERED ;
 					Cl_UpdateMacAlarmEventTable();
 					
@@ -1089,7 +1091,7 @@ Cl_ReturnCodes Cl_UpdateMacAlarmEventTable(void)
 		Cl_MacEvent1.Cl_MacNewEventcount++; 
 	}
 }
-Cl_ReturnCodes Cl_AlarmConfigureAlarmType(Cl_AlarmIdType cl_alarm_id , Cl_AlarmTriggerType alarmtriggertype,uint16_t cl_upper,uint16_t cl_lower,uint8_t  count_threshold )
+Cl_ReturnCodes Cl_AlarmConfigureAlarmType(Cl_NewAlarmIdType cl_alarm_id , Cl_AlarmTriggerType alarmtriggertype,uint16_t cl_upper,uint16_t cl_lower,uint8_t  count_threshold )
 {
 	
 Cl_alarms_alarms[cl_alarm_id].cl_triggertype = alarmtriggertype;
@@ -1098,7 +1100,7 @@ Cl_alarms_alarms[cl_alarm_id].cl_upper = cl_upper;
 Cl_alarms_alarms[cl_alarm_id].count_threshold = count_threshold;		
 }
 
-Cl_ReturnCodes Cl_AlarmActivateAlarms(Cl_AlarmIdType cl_alarm_id , bool status )
+Cl_ReturnCodes Cl_AlarmActivateAlarms(Cl_NewAlarmIdType cl_alarm_id , bool status )
 {
 	Cl_ReturnCodes cl_RinseRetCode = CL_OK;
 	
@@ -1150,7 +1152,7 @@ Cl_ReturnCodes Cl_AlarmActivateAlarms(Cl_AlarmIdType cl_alarm_id , bool status )
 }
 
 
-Cl_ReturnCodes Cl_AlarmResetAlarm(Cl_AlarmIdType cl_alarm_id )
+Cl_ReturnCodes Cl_AlarmResetAlarm(Cl_NewAlarmIdType cl_alarm_id )
 {
 	Cl_ReturnCodes cl_RinseRetCode = CL_OK;
 	
@@ -1161,7 +1163,7 @@ Cl_ReturnCodes Cl_AlarmResetAlarm(Cl_AlarmIdType cl_alarm_id )
 	
 }
 
-Cl_ReturnCodes Cl_AlarmMuteAlarms(Cl_AlarmIdType cl_alarm_id)
+Cl_ReturnCodes Cl_AlarmMuteAlarms(Cl_NewAlarmIdType cl_alarm_id)
 {
 	Cl_ReturnCodes cl_alarmRetCode = CL_OK;
 	
@@ -1172,7 +1174,7 @@ Cl_ReturnCodes Cl_AlarmMuteAlarms(Cl_AlarmIdType cl_alarm_id)
 	
 }
 
-Cl_ReturnCodes Cl_Alarm_GetLastAlarm(Cl_AlarmIdType* cl_alarm_id)
+Cl_ReturnCodes Cl_Alarm_GetLastAlarm(Cl_NewAlarmIdType* cl_alarm_id)
 {
 		Cl_ReturnCodes cl_alarmRetCode = CL_OK;
 		*cl_alarm_id = cl_lastalarmid;
@@ -1181,7 +1183,7 @@ Cl_ReturnCodes Cl_Alarm_GetLastAlarm(Cl_AlarmIdType* cl_alarm_id)
 	
 }
 
-Cl_ReturnCodes Cl_Alarm_GetAlarmStatus(Cl_AlarmIdType cl_alarm_id , bool* cl_status)
+Cl_ReturnCodes Cl_Alarm_GetAlarmStatus(Cl_NewAlarmIdType cl_alarm_id , bool* cl_status)
 {
 	Cl_ReturnCodes cl_alarmRetCode = CL_OK;
 	 if (Cl_alarms_alarms[cl_alarm_id].cl_alarmstate  == CL_ALARM_DETECTED ||  Cl_alarms_alarms[cl_alarm_id].cl_alarmstate == CL_ALARM_MUTE) 
@@ -1199,7 +1201,7 @@ Cl_ReturnCodes Cl_Alarm_GetAlarmStatus(Cl_AlarmIdType cl_alarm_id , bool* cl_sta
 	
 }
 
-Cl_ReturnCodes Cl_Alarm_GetAlertStatus(Cl_AlarmIdType cl_alarm_id , bool* cl_status)
+Cl_ReturnCodes Cl_Alarm_GetAlertStatus(Cl_NewAlarmIdType cl_alarm_id , bool* cl_status)
 {
 	Cl_ReturnCodes cl_alarmRetCode = CL_OK;
 	if (Cl_alarms_alarms[cl_alarm_id].cl_alarmstate  == CL_ALARM_DETECTED ||  Cl_alarms_alarms[cl_alarm_id].cl_alarmstate == CL_ALARM_MUTE)
@@ -1217,7 +1219,7 @@ Cl_ReturnCodes Cl_Alarm_GetAlertStatus(Cl_AlarmIdType cl_alarm_id , bool* cl_sta
 	
 }
 
-Cl_ReturnCodes Cl_Alarm_TriggerDummyAlarm(Cl_AlarmIdType cl_alarm_id , bool cl_status)
+Cl_ReturnCodes Cl_Alarm_TriggerDummyAlarm(Cl_NewAlarmIdType cl_alarm_id , bool cl_status)
 {
 	if(cl_status)
 	{
@@ -1243,7 +1245,7 @@ Cl_ReturnCodes Cl_Alarm_TriggerDummyAlarm(Cl_AlarmIdType cl_alarm_id , bool cl_s
 	
 	}
 }
-Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_AlarmIdType cl_alarm_id , bool cl_status)
+Cl_ReturnCodes Cl_Alarm_TriggerAlarm(Cl_NewAlarmIdType cl_alarm_id , bool cl_status)
 {
 	if(Cl_alarms_alarms[cl_alarm_id].cl_is_enabled)
 	{
