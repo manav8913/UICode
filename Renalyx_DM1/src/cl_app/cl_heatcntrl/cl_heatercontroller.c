@@ -137,7 +137,10 @@ Cl_ReturnCodes SetHeaterState(HeaterStateType Param_HeaterState)
 	
 	HeaterPrevState = HeaterState;
 	HeaterState = Param_HeaterState;
-	
+	if(Param_HeaterState == CL_HEATER_STATE_OFF)
+	{
+		sv_cntrl_poweroffheater();
+	}
 		Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP1STATUS,&temp);
 		initial_temp1 =  0.8056 * temp;
 		uint32_t ret_temp;
@@ -186,7 +189,11 @@ Cl_ReturnCodes UpdateHeaterControls(void)
 	int16_t temp,temp1,heat_loss;
 	float Tmp1Val=0,Tmp2Val = 0,Tmp3Val=0 ;
 	
-	
+	if(HeaterState == CL_HEATER_STATE_OFF)
+	{
+		sv_cntrl_poweroffheater();
+		return;
+	}
 	if((HeaterState == CL_HEATER_STATE_INACTIVE) || (HeaterState == CL_HEATER_SUBSTATE_OFF))
 	{
 		return;

@@ -526,6 +526,7 @@ Cl_dlsisretcode =  cl_dlsis_translatemacevent( Cl_MacDlsisEvent, &cl_dlsis_event
 					sv_cntrl_deactivatepump(BLOODPUMP);
 					Cl_dlsisretcode = cl_Dlsis_notifydacandgotorinsestandby();
 					sv_cntrl_poweroffheater();
+					SetHeaterState(CL_HEATER_STATE_OFF);
 					sv_cntrl_setflowpath(FLOW_PATH_IDLE_RINSE);
 					Cl_DlsisFillingFlowOff();
 					cl_uf_controller(CL_UF_EVENT_STOP,0);

@@ -44,7 +44,8 @@ Cl_ReturnCodes 		Cl_SysStat_System_Status_Query(void);
 
 
 
-extern Cl_Sys_statusType cl_sys_statbuffer;
+extern Cl_Sys_statusType cl_sys_statbuffer,cl_sys_statbuffer_test;
+extern bool test_enabled;
 extern Cl_ReturnCodes cl_memset(uint8_t* , uint8_t );
 
 extern Cl_ReturnCodes sv_cntrl_poweroffheater(void);
@@ -246,8 +247,16 @@ Cl_ReturnCodes 		Cl_SysStat_GetSensor_Status_Query(Cl_SensorDeviceIdType dataID,
 			*pdata  = tempdata;
 			break;
 			case SENSOR_BDSTATUS:
-			tempdata =  cl_sys_statbuffer.bdstatus;
-			*pdata  = tempdata;
+			if( test_enabled)
+			{
+				tempdata =  cl_sys_statbuffer_test.bdstatus;
+				*pdata  = tempdata;
+			}else
+			{
+				tempdata =  cl_sys_statbuffer.bdstatus;
+				*pdata  = tempdata;
+			}
+
 			break;
 			case SENSOR_APTSTATUS:
 			tempdata =  cl_sys_statbuffer.aptstatus;

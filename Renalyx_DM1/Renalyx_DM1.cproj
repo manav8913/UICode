@@ -649,6 +649,12 @@
     <Compile Include="src\cl_app\cl_console\config\conf_uart_serial.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\cl_app\cl_datamanager\cl_datamanager.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\cl_app\cl_datamanager\inc\cl_datamanager.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\cl_app\cl_debug\cl_debug.c">
       <SubType>compile</SubType>
     </Compile>
@@ -676,7 +682,7 @@
     <Compile Include="src\cl_app\cl_heatcntrl\cl_heatercontroller.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\cl_app\cl_heatcntrl\inc\cl_heatercontroller.c.h">
+    <Compile Include="src\cl_app\cl_heatcntrl\inc\cl_heatercontroller.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\cl_app\cl_init\cl_init.c">
@@ -706,6 +712,9 @@
     <Compile Include="src\cl_app\cl_status\comp\Cl_temperature_sensor.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\cl_app\cl_status\comp\inc\Cl_Conductivity_Sensors.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\cl_app\cl_status\comp\inc\Cl_PressureSensors.h">
       <SubType>compile</SubType>
     </Compile>
@@ -728,6 +737,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\cl_app\cl_timer\inc\Cl_TimerManager.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\cl_app\cl_treatment\cl_treatment.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\cl_app\cl_treatment\inc\cl_treatment.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\cl_app\cl_utils\cl_utilities.c">
@@ -1036,10 +1051,10 @@
     <Compile Include="src\cl_app\cl_console_proto\inc\cl_console_proto.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\cl_app\cl_dinf\cl_dinf_controller.c">
+    <Compile Include="src\cl_app\cl_disinf\cl_disinf_controller.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\cl_app\cl_dinf\inc\cl_dinf_controller.h">
+    <Compile Include="src\cl_app\cl_disinf\inc\cl_disinf_controller.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\cl_app\cl_dprep\cl_dprep_controller.c">
@@ -1513,9 +1528,10 @@
     <Folder Include="src\cl_app\cl_console\inc\" />
     <Folder Include="src\cl_app\cl_console_proto\" />
     <Folder Include="src\cl_app\cl_console_proto\inc\" />
+    <Folder Include="src\cl_app\cl_datamanager\inc" />
     <Folder Include="src\cl_app\cl_debug\inc" />
-    <Folder Include="src\cl_app\cl_dinf\" />
-    <Folder Include="src\cl_app\cl_dinf\inc\" />
+    <Folder Include="src\cl_app\cl_disinf" />
+    <Folder Include="src\cl_app\cl_disinf\inc" />
     <Folder Include="src\cl_app\cl_dlsis\inc" />
     <Folder Include="src\cl_app\cl_dprep\" />
     <Folder Include="src\cl_app\cl_dprep\inc\" />
@@ -1533,6 +1549,7 @@
     <Folder Include="src\cl_app\cl_stby\inc\" />
     <Folder Include="src\cl_app\cl_testharness\inc" />
     <Folder Include="src\cl_app\cl_timer\inc" />
+    <Folder Include="src\cl_app\cl_treatment\inc" />
     <Folder Include="src\cl_app\cl_utils\inc" />
     <Folder Include="src\cl_app\comp\bloodpumpcntrl" />
     <Folder Include="src\cl_app\comp\bloodpumpcntrl\inc" />
@@ -1564,6 +1581,8 @@
     <Folder Include="src\cl_app\cl_status" />
     <Folder Include="src\cl_app\cl_dlsis" />
     <Folder Include="src\cl_app\cl_cal" />
+    <Folder Include="src\cl_app\cl_treatment" />
+    <Folder Include="src\cl_app\cl_datamanager" />
     <Folder Include="src\config" />
     <Folder Include="src\Platform" />
     <Folder Include="src\Platform\Drivers" />

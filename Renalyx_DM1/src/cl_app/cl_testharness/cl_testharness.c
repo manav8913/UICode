@@ -71,6 +71,7 @@ extern Cl_alarms_alarms;
 extern Cl_AlarmThresholdType  Cl_alarmThresholdTable;
 extern volatile float temprature_final_value_2;
  bool current_sense = false;
+ bool test_enabled = false;
 
 
 Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType*);
@@ -82,6 +83,7 @@ bool prev_gate_status =1;
 int array_commands[100] = {};
 Cl_NewAlarmIdType cl_testalarm_id ;
  bool heater_update_disble = false ;
+ Cl_Sys_statusType  cl_sys_statbuffer_test;
 
 void DD_IIC_SET_BLOODPUP(uint8_t iic_address, uint8_t* data,uint8_t length);
 
@@ -402,7 +404,8 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 		cl_sys_statbuffer.abdstatus =  TestMsg.data.byte[1];
 		break;
 		case TEST_SET_ALARM_BDSTATUS://15
-		cl_sys_statbuffer.bdstatus =  TestMsg.data.byte[1];
+		test_enabled = false;
+		cl_sys_statbuffer_test.bdstatus =  TestMsg.data.byte[1];
 		break;
 		case TEST_SET_ALARM_APTSTATUS://16
 		cl_sys_statbuffer.aptstatus =  TestMsg.data.byte[1];

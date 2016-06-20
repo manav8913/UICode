@@ -72,6 +72,14 @@ Cl_ReturnCodes cl_datamamanager(MAC_EVENTS cl_data_event)
 				dataarray[1] = 0;									
 				cl_data_ret_val = Cl_SendDatatoconsole(command,&dataarray,2);
 				break;
+				
+				case	CON_RX_PARAM_DATA_DIALYSIS_STATUS:
+				command = CON_TX_COMMAND_SYSDATA;
+				dataarray[0] = CON_TX_PARAM_DATA_DIALYSIS_STATUS;
+				cl_data_ret_val = (uint8_t)sv_nvmgetdata(NV_NVM_DIALYSIS_STATUS, &dataarray[1]);
+				cl_data_ret_val = Cl_SendDatatoconsole(command,&dataarray,2);
+				break;
+
 				case CON_RX_PARAM_DATA_TREATMENT_DATA:
 				
 				command = CON_TX_COMMAND_SYSDATA;
