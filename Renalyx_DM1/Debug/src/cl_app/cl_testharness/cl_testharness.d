@@ -140,6 +140,10 @@ src/cl_app/cl_testharness/cl_testharness.d \
  ../src/ASF/common/services/twi/twi_slave.h \
  ../src/ASF/common/services/twi/sam_twi/twi_slave.h \
  ../src/ASF/sam/drivers/pio/pio_handler.h \
+ ../src/cl_app/cl_dprep/inc/cl_dprep_primecontroller.h \
+ ../src/cl_app/cl_dlsis/inc/cl_dlsis_controller.h \
+ ../src/cl_app/cl_alarms/inc/cl_alarmdetector.h \
+ ../src/cl_app/cl_dprep/inc/cl_dprep_controller.h \
  ../src/cl_app/cl_mac/inc/cl_mac_controller.h \
  ../src/cl_app/cl_testharness/inc/cl_th.h \
  ../src/cl_app/cl_console/inc/cl_consolecontroller.h \
@@ -158,7 +162,7 @@ src/cl_app/cl_testharness/cl_testharness.d \
  ../src/Platform/Drivers/DD_TIMER/DD_TIMER.h \
  ../src/Platform/Drivers/DD_UART/DD_UART.h \
  ../src/Platform/Drivers/DD_HANDLERS/DD_HANDLER.h \
- ../src/cl_app/cl_alarms/inc/cl_alarmdetector.h \
+ ../src/Platform/Drivers/DD_IIC/DD_IIC.h \
  ../src/cl_app/cl_rinse/inc/cl_rinse_controller.h \
  ../src/cl_app/cl_heatcntrl/inc/cl_heatercontroller.h \
  ../src/cl_app/cl_cal/calibration.h
@@ -461,6 +465,14 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 
 ../src/ASF/sam/drivers/pio/pio_handler.h:
 
+../src/cl_app/cl_dprep/inc/cl_dprep_primecontroller.h:
+
+../src/cl_app/cl_dlsis/inc/cl_dlsis_controller.h:
+
+../src/cl_app/cl_alarms/inc/cl_alarmdetector.h:
+
+../src/cl_app/cl_dprep/inc/cl_dprep_controller.h:
+
 ../src/cl_app/cl_mac/inc/cl_mac_controller.h:
 
 ../src/cl_app/cl_testharness/inc/cl_th.h:
@@ -499,7 +511,7 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 
 ../src/Platform/Drivers/DD_HANDLERS/DD_HANDLER.h:
 
-../src/cl_app/cl_alarms/inc/cl_alarmdetector.h:
+../src/Platform/Drivers/DD_IIC/DD_IIC.h:
 
 ../src/cl_app/cl_rinse/inc/cl_rinse_controller.h:
 

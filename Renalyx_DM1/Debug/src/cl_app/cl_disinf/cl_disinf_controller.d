@@ -161,7 +161,8 @@ src/cl_app/cl_disinf/cl_disinf_controller.d \
  ../src/Platform/Drivers/DD_SYS/DD_SYS.h \
  ../src/Platform/Drivers/DD_TIMER/DD_TIMER.h \
  ../src/Platform/Drivers/DD_UART/DD_UART.h \
- ../src/Platform/Drivers/DD_HANDLERS/DD_HANDLER.h
+ ../src/Platform/Drivers/DD_HANDLERS/DD_HANDLER.h \
+ ../src/cl_app/cl_cal/calibration.h
 
 ../src/cl_app/cl_mac/inc/cl_mac_controller.h:
 
@@ -502,3 +503,5 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/Platform/Drivers/DD_UART/DD_UART.h:
 
 ../src/Platform/Drivers/DD_HANDLERS/DD_HANDLER.h:
+
+../src/cl_app/cl_cal/calibration.h:

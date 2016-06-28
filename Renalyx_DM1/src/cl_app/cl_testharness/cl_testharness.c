@@ -10,11 +10,15 @@
 
 #include "cl_app/inc/cl_stubs.h"
 #include "cl_app/inc/cl_types.h"
+#include "cl_app/cl_dprep/inc/cl_dprep_primecontroller.h"
+#include "cl_app/cl_dlsis/inc/cl_dlsis_controller.h"
+#include "cl_app/cl_dprep/inc/cl_dprep_controller.h"
 #include "cl_app/cl_mac/inc/cl_mac_controller.h"
 #include "cl_app/cl_testharness/inc/cl_th.h"
 #include "cl_app/cl_console/inc/cl_consolecontroller.h"
 #include "sv_stubs/inc/sv_stub.h"
 #include "Platform/Service/sv_interface.h"
+#include "Platform/Drivers/DD_IIC/DD_IIC.h"
 #include "cl_app/cl_alarms/inc/cl_alarmdetector.h"
 #include "cl_app/cl_rinse/inc/cl_rinse_controller.h"
 #include "cl_app/cl_heatcntrl/inc/cl_heatercontroller.h"
@@ -67,12 +71,23 @@ extern Cl_Sys_statusType cl_sys_statbuffer;
 extern int Cl_RinseMinutescounter;
 extern uint8_t sys_sw_version;
 extern bool syncdone;
-extern Cl_alarms_alarms;
+extern IIC_PROPO_CommandType PROPO_Command_Queue[];
+extern IIC_BP_CommandType BP_Command_Queue[];
+
 extern Cl_AlarmThresholdType  Cl_alarmThresholdTable;
 extern volatile float temprature_final_value_2;
+extern Cl_AlarmStructType Cl_alarms_alarms[_ALARM_MAX_ID];
+
  bool current_sense = false;
  bool test_enabled = false;
-
+ 	
+ MAC_STATES MacStateDummy;
+ Cl_Rinse_States Rinsestatedummy;
+ Cl_Dprep_PrimeStates cl_dprep_prime_stateDummy;
+ Cl_Dprep_States cl_dprepstatedummy;
+ Cl_Dlsis_States cl_dlsis_state_dummy;
+  bool Loopbackstatus;
+  bool Bypassstatus;
 
 Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType*);
 Cl_ReturnCodes  cl_testgetsensordata(uint8_t dataId, uint16_t* dataItem);
@@ -85,7 +100,7 @@ Cl_NewAlarmIdType cl_testalarm_id ;
  bool heater_update_disble = false ;
  Cl_Sys_statusType  cl_sys_statbuffer_test;
 
-void DD_IIC_SET_BLOODPUP(uint8_t iic_address, uint8_t* data,uint8_t length);
+void DD_IIC_SET_BLOODPUP(uint8_t iic_address, uint32_t data,uint8_t length);
 
 void Cl_tg_prick_100ms(void)	;
 void Cl_tg_prick_50ms(void)	;
@@ -168,6 +183,8 @@ bool iic_nack = false;
 static uint16_t uf_rotation_counter = 0;
 static int16_t avgtmp3   = 0;
 //array_command_type cmd_backup;
+testsensorType test_sensor_status[SENSOR_MAX_INPUT];
+
 Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 {
 	Cl_ReturnCodes cl_thretval = CL_ERROR;
@@ -551,6 +568,55 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 		//	sv_cs_readpotvalue(&cl_indata.Twobyte);
 	}
 	break;
+	
+	case TEST_GET_SYSTEM_STATE:
+	{
+		
+	
+	uint8_t system_status[10];
+	 system_status[0] = MacStateDummy;
+	 system_status[1] =  Rinsestatedummy;
+	 system_status[2] =  cl_dprep_prime_stateDummy;
+	 system_status[3] =  cl_dprepstatedummy;
+	 system_status[4] =  cl_dlsis_state_dummy;
+	 system_status[5] =  Loopbackstatus;
+	 system_status[6] =  Bypassstatus;
+	 
+	 cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_SYSTEM_STATUS,system_status,7);
+	}
+	
+	break;
+	
+	case TEST_GET_ALARM_TABLE:
+	{
+		
+	
+		uint8_t temparray[4];
+		uint8_t cntr = 0, cntr_1 =0;
+	
+		for ( cntr =0; cntr <  _ALARM_MAX_ID ; cntr++)
+		{
+				temparray[cntr_1++] = cntr;
+				temparray[cntr_1++] = Cl_alarms_alarms[cntr].cl_is_enabled;
+				temparray[cntr_1++] = Cl_alarms_alarms[cntr].cl_is_raised;
+				temparray[cntr_1] = Cl_alarms_alarms[cntr].cl_alarmstate;
+			
+				cntr_1 = 0;
+				cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_COMMAND_ALARM_STATUS,temparray,4);
+		
+		}
+			
+	}
+	
+	break;
+	case TEST_GET_IIC_BUFFER:
+	
+	break;
+	case TEST_GET_ALARM_LIMIT:
+	
+	break;
+	
+	
 		case TEST_SET_FLOW_PUMPRATE ://23 0x17
 		cl_wait(100);
 		pdataarray = (uint8_t *)"FP_RATE";
@@ -858,16 +924,16 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 			
 		}
 		
-		uint8_t bloodpumpspeed[3];
+		//uint8_t bloodpumpspeed[3];
 	
-		bloodpumpspeed[0] = 0x04 ;
-		bloodpumpspeed[1] = 0xff & cl_indata.word ;
-		bloodpumpspeed[2] = 0xff & cl_indata.word >> 8 ;
+		//bloodpumpspeed[0] = 0x04 ;
+		//bloodpumpspeed[1] = 0xff & cl_indata.word ;
+		//bloodpumpspeed[2] = 0xff & cl_indata.word >> 8 ;
 		
 
 
 
-			   DD_IIC_SET_BLOODPUP( 0x0E,  &bloodpumpspeed , 0x03);
+			   //DD_IIC_SET_BLOODPUP( 0x0E,  &bloodpumpspeed , 0x03);
 
 	
 	
@@ -887,29 +953,29 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 			
 		}
 		
-		uint8_t bloodpumpspeed1[3];
+	//	uint8_t bloodpumpspeed1[3];
 	
-		bloodpumpspeed1[0] = 0x05 ;
-		bloodpumpspeed1[1] = 0xff & cl_indata.word ;
-		bloodpumpspeed1[2] = 0xff & cl_indata.word >> 8 ;
+	//	bloodpumpspeed1[0] = 0x05 ;
+	//	bloodpumpspeed1[1] = 0xff & cl_indata.word ;
+	//	bloodpumpspeed1[2] = 0xff & cl_indata.word >> 8 ;
 		
 
 
 
-			   DD_IIC_SET_BLOODPUP( 0x0E,  &bloodpumpspeed1 , 0x03);
+		//	   DD_IIC_SET_BLOODPUP( 0x0E,  &bloodpumpspeed1 , 0x03);
 		break;
 		case  TEST_SET_CPU2_RESUME:
-				cl_wait(100);
-				uint8_t cpu2command[3];
+				//cl_wait(100);
+				//uint8_t cpu2command[3];
 				
-				cpu2command[0] = 0x0A ;
+				//cpu2command[0] = 0x0A ;
 			//	bloodpumpspeed1[1] = 0xff & cl_indata.word ;
 			//	bloodpumpspeed1[2] = 0xff & cl_indata.word >> 8 ;
 				
 
 
 
-				DD_IIC_SET_BLOODPUP( 0x0E,  &cpu2command , 0x01);
+			//	DD_IIC_SET_BLOODPUP( 0x0E,  &cpu2command , 0x01);
 		break;
 		case TEST_SET_VCLAMP_OFF://36 0x24
 		cl_wait(100);
@@ -1385,7 +1451,7 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 				
 			case TEST_SYS_VERSION:
 					
-			pdataarray = (uint8_t *)"Ver:T.3";
+			pdataarray = (uint8_t *)"Ver:T.4";
 			cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,pdataarray,7);
 			//cl_testgetversion(&version);
 			//cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_SYS_VERSION,&version,1);
@@ -1587,42 +1653,341 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 						}
 						switch(cl_indata.bytearray[3])
 						{
+							case TEST_SENSOR_TEMP1:
+							if(cl_indata.bytearray[2]== 1)
+							{
+								Cl_alarmThresholdTable.temp1_high_threshold = cl_indata.Twobyte;
+								uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEMP1_HIGH",10);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+							}
+							else if(cl_indata.bytearray[2]== 0)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								Cl_alarmThresholdTable.temp1_low_threshold =cl_indata.Twobyte;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEMP1_LOW",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 2)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								test_sensor_status[SENSOR_TEMP1STATUS].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_TEMP1STATUS].test_flag = true;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEMP1_LOW",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 3)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								//test_sensor_status[TEST_SENSOR_TEMP1].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_TEMP1STATUS].test_flag = false;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEMP1",5);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							break;
+							case TEST_SENSOR_TEMP2:
+							if(cl_indata.bytearray[2]== 1)
+							{
+								Cl_alarmThresholdTable.temp2_high_threshold = cl_indata.Twobyte;
+								uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEMP2_HIGH",10);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+							}
+							else if (cl_indata.bytearray[2]== 0)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								Cl_alarmThresholdTable.temp2_low_threshold =cl_indata.Twobyte;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEMP2_LOW",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 2)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								test_sensor_status[SENSOR_TEMP2STATUS].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_TEMP2STATUS].test_flag = true;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEST",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 3)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								//test_sensor_status[TEST_SENSOR_TEMP1].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_TEMP2STATUS].test_flag = false;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEMP2",5);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							break;
+							
 							
 							case TEST_SENSOR_TEMP3:
 							if(cl_indata.bytearray[2]== 1)
 							{
-								Cl_alarmThresholdTable.temp3_high_threshold = cl_indata.Twobyte/10;								
-							}else
+								Cl_alarmThresholdTable.temp3_high_threshold = cl_indata.Twobyte;
+								uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEMP_HIGH",8);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);								
+							}
+							else if (cl_indata.bytearray[2]== 0)
 							{
-								
-								Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte/10;
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								Cl_alarmThresholdTable.temp3_low_threshold =cl_indata.Twobyte;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEMP_LOW",7);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 2)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								test_sensor_status[SENSOR_TEMP3STATUS].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_TEMP3STATUS].test_flag = true;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEST",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 3)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								//test_sensor_status[TEST_SENSOR_TEMP1].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_TEMP3STATUS].test_flag = false;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEMP3",5);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
 							}
 							break;
+							
 							case TEST_SENSOR_APT:
 							if(cl_indata.bytearray[2]== 1)
 								{
-								Cl_alarmThresholdTable.apt_high_threshold = cl_indata.Twobyte/10;
-								}else
-								{
-								Cl_alarmThresholdTable.apt_low_threshold = cl_indata.Twobyte/10;
+								Cl_alarmThresholdTable.apt_high_threshold = cl_indata.Twobyte;
+								uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"APT_HIGH",8);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
 								}
+								else if (cl_indata.bytearray[2]== 0)
+								{
+									int16_t temp=0,temp1=0;
+									temp = cl_indata.Twobyte-1000;
+									//temp = cl_indata.Twobyte;
+									Cl_alarmThresholdTable.apt_low_threshold =temp;
+									temp1=temp+1000;
+									cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"APT_LOW= (-)",12);
+									//cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTNDATA,&temp1,2);
+									//cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTNDATA,&temp,2);
+								}
+								else if(cl_indata.bytearray[2]== 2)
+								{
+									int16_t temp=0,temp1=0;
+									//temp = cl_indata.Twobyte-1000;
+									test_sensor_status[SENSOR_APTSTATUS].test_sensord_data =cl_indata.Twobyte;
+									test_sensor_status[SENSOR_APTSTATUS].test_flag = true;
+									//temp1=temp+1000;
+									//uint16_t temp;
+									temp = cl_indata.Twobyte;
+									cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEST",9);
+									cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+									//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+								}
+								else if(cl_indata.bytearray[2]== 3)
+								{
+									int16_t temp=0,temp1=0;
+									//temp = cl_indata.Twobyte-1000;
+									//test_sensor_status[TEST_SENSOR_TEMP1].test_sensord_data =cl_indata.Twobyte;
+									test_sensor_status[SENSOR_APTSTATUS].test_flag = false;
+									//temp1=temp+1000;
+									//uint16_t temp;
+									temp = cl_indata.Twobyte;
+									cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"APT_LOW",9);
+									cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+									//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+								}
+								break;
 							break;
 							case TEST_SENSOR_VPT:
 							if(cl_indata.bytearray[2]== 1)
 							{
-								Cl_alarmThresholdTable.vpt_high_threshold = cl_indata.Twobyte/10;
-							}else
-							{
-								Cl_alarmThresholdTable.vpt_low_threshold = cl_indata.Twobyte/10;
+								Cl_alarmThresholdTable.vpt_high_threshold = cl_indata.Twobyte;
+								uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"VPT_HIGH",8);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
 							}
+							else if (cl_indata.bytearray[2]== 0)
+							{
+								int16_t temp=0,temp1=0;
+								temp = cl_indata.Twobyte-1000;
+								//temp = cl_indata.Twobyte;
+								Cl_alarmThresholdTable.vpt_low_threshold =temp;
+								temp1=temp+1000;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"VPT_LOW= (-)",12);
+								//cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTNDATA,&temp1,2);
+								//cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTNDATA,&temp,2);
+							}
+							else if(cl_indata.bytearray[2]== 2)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								test_sensor_status[SENSOR_VPTSTATUS].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_VPTSTATUS].test_flag = true;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEST",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 3)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								//test_sensor_status[TEST_SENSOR_TEMP1].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_VPTSTATUS].test_flag = false;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS2_LOW",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							break;
 							break;
 							case TEST_SENSOR_COND:
 							if(cl_indata.bytearray[2]== 1)
 							{
-								Cl_alarmThresholdTable.cond_high_threshold = cl_indata.Twobyte/10;
-							}else
+								Cl_alarmThresholdTable.cond_high_threshold = cl_indata.Twobyte;
+								uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"COND_HIGH",8);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+							}
+							else if(cl_indata.bytearray[2]== 0)
 							{
-								Cl_alarmThresholdTable.cond_low_threshold = cl_indata.Twobyte/10;
+								
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								Cl_alarmThresholdTable.cond_low_threshold = cl_indata.Twobyte;
+								temp1=cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"COND_LOW",8);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp1,2);
+							}
+							else if(cl_indata.bytearray[2]== 2)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								test_sensor_status[SENSOR_COND_STATUS].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_COND_STATUS].test_flag = true;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEST",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 3)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								//test_sensor_status[TEST_SENSOR_TEMP1].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_COND_STATUS].test_flag = false;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"CON_LOW",7);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							break;
+							
+							case TEST_SENSOR_PS1:
+							if(cl_indata.bytearray[2]== 1)
+							{
+								Cl_alarmThresholdTable.ps1_high_threshold = cl_indata.Twobyte;
+								uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS1_HIGH",8);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+							}
+							else if (cl_indata.bytearray[2]== 0)
+							{
+								int16_t temp=0,temp1=0;
+								temp = cl_indata.Twobyte-1000;
+								//temp = cl_indata.Twobyte;
+								Cl_alarmThresholdTable.ps1_low_threshold =temp;
+								temp1=temp+1000;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS1_LOW= (-)",12);
+								//cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTNDATA,&temp1,2);
+								//cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTNDATA,&temp,2);
+							}
+							else if(cl_indata.bytearray[2]== 2)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								test_sensor_status[SENSOR_PS1STATUS].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_PS1STATUS].test_flag = true;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEST",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 3)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								//test_sensor_status[TEST_SENSOR_TEMP1].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_PS1STATUS].test_flag = false;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS2_LOW",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
 							}
 							break;
 							case TEST_SENSOR_PS2:
@@ -1633,11 +1998,92 @@ Cl_ReturnCodes cl_testharnesscommandhandler(Cl_ConsoleMsgType* pCl_ConsoleMsg)
 								temp = cl_indata.Twobyte;
 								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS2",3);
 								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
-							}else
+							}
+							else if (cl_indata.bytearray[2]== 0)
 							{
-								Cl_alarmThresholdTable.ps2_low_threshold = cl_indata.Twobyte;
+								int16_t temp=0,temp1=0;
+								temp = cl_indata.Twobyte-1000;
+								Cl_alarmThresholdTable.ps2_low_threshold = temp;
+								temp1=temp+1000;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS2_LOW= (-)",12);
+								//cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTNDATA,&temp1,2);
+							}
+							else if(cl_indata.bytearray[2]== 2)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								test_sensor_status[SENSOR_PS2STATUS].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_PS2STATUS].test_flag = true;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEST",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 3)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								//test_sensor_status[TEST_SENSOR_TEMP1].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_PS2STATUS].test_flag = false;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS2_LOW",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
 							}
 							break;
+							case TEST_SENSOR_PS3:
+							if(cl_indata.bytearray[2]== 1)
+							{
+								Cl_alarmThresholdTable.ps3_high_threshold = cl_indata.Twobyte;
+								uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS3",3);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+							}
+							else if(cl_indata.bytearray[2]== 0)
+							{
+								int16_t temp=0,temp1=0;
+								temp = cl_indata.Twobyte-1000;
+								//temp = cl_indata.Twobyte;
+								Cl_alarmThresholdTable.ps3_low_threshold = temp;
+								temp1=temp+1000;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS3_LOW= (-)",12);
+								//cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTNDATA,&temp1,2);
+								//cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.ps3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 2)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								test_sensor_status[SENSOR_PS3STATUS].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_PS3STATUS].test_flag = true;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TEST",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							else if(cl_indata.bytearray[2]== 3)
+							{
+								int16_t temp=0,temp1=0;
+								//temp = cl_indata.Twobyte-1000;
+								//test_sensor_status[TEST_SENSOR_TEMP1].test_sensord_data =cl_indata.Twobyte;
+								test_sensor_status[SENSOR_PS3STATUS].test_flag = false;
+								//temp1=temp+1000;
+								//uint16_t temp;
+								temp = cl_indata.Twobyte;
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS3_LOW",9);
+								cl_thretval = Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+								//Cl_alarmThresholdTable.temp3_low_threshold = cl_indata.Twobyte;
+							}
+							break;
+							
 							case 255:
 							if(cl_indata.bytearray[2]== 1)
 							{

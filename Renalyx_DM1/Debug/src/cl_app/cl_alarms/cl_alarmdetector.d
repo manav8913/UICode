@@ -146,7 +146,8 @@ src/cl_app/cl_alarms/cl_alarmdetector.d \
  ../src/cl_app/comp/levelswichcntrl/inc/cl_level_switchcontroller.h \
  ../src/cl_app/comp/flowswitchcntrl/inc/flowswitchcntrl.h \
  ../src/cl_app/cl_alarms/comp/inc/cl_conductivity_detector.h \
- ../src/cl_app/cl_cal/calibration.h
+ ../src/cl_app/cl_cal/calibration.h \
+ ../src/cl_app/cl_testharness/inc/cl_th.h
 
 ../src/cl_app/inc/cl_types.h:
 
@@ -457,3 +458,5 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/cl_app/cl_alarms/comp/inc/cl_conductivity_detector.h:
 
 ../src/cl_app/cl_cal/calibration.h:
+
+../src/cl_app/cl_testharness/inc/cl_th.h:

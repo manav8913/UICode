@@ -19,6 +19,7 @@ extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,
 
 extern uint8_t sv_cntrl_setflowpath(sv_flowpathtype);
 extern void sv_prop_startmixing();
+extern void sv_prop_stopopenfill();
 extern Cl_ReturnCodes SetHeaterState(HeaterStateType Param_HeaterState);
 extern uint8_t sv_cntrl_setpumpspeed(sv_pumptype sv_pump_id,uint32_t speed);
 extern uint8_t sv_cntrl_activate_valve(sv_valvetype );
@@ -29,7 +30,7 @@ static Cl_BC_States bc_laststate = CL_BC_STATE_IDLE;
 static bool bc_wait = false;
 static int16_t wait_counter = 0;
 static int16_t openfillcounter = 0;
-
+volatile uint16_t switch_time1=0,switch_time2=0;
 extern bool current_sense ;
 
 sv_flowpathtype cl_flowpathtable[CL_BC_STATE_MAXSTATE] =
@@ -139,11 +140,12 @@ Cl_ReturnCodes  Cl_bc_controller(Cl_BC_EventType cl_bc_event)
 								case	BC_EVENT_SECOND:
 								if(openfillcounter++ > CL_BC_OPENFILL_TIMEOUT * 60)
 								{
+									sv_prop_stopopenfill();
 									openfillcounter = 0;
 								//	sv_prop_startmixing();
 								//	SetHeaterState(CL_HEATER_STATE_START);
-									sv_cntrl_setpumpspeed(DCMOTOR2,1100);
-									sv_cntrl_setpumpspeed(DCMOTOR1,1050);
+									sv_cntrl_setpumpspeed(DCMOTOR2,900);
+									sv_cntrl_setpumpspeed(DCMOTOR1,960);
 									
 									
 									cl_bc_returncode = (Cl_ReturnCodes)sv_cntrl_setflowpath(BC_FLUSH_1_V13_14);
@@ -345,6 +347,7 @@ Cl_ReturnCodes  Cl_bc_controller(Cl_BC_EventType cl_bc_event)
 								
 								break;
 								case	BC_EVENT_CS:
+									//switch_time1 = fill_time;
 									current_sense = true;
 									cl_tdata.word =0;
 									cl_tdata.Twobyte = fill_time;
@@ -403,6 +406,7 @@ Cl_ReturnCodes  Cl_bc_controller(Cl_BC_EventType cl_bc_event)
 								
 								break;
 								case	BC_EVENT_CS:
+								//switch_time2 = fill_time;
 								 current_sense = true;
 									cl_tdata.word =0;
 									cl_tdata.Twobyte = fill_time;

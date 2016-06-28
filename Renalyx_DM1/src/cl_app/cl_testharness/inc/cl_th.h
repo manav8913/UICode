@@ -120,6 +120,10 @@ TEST_SET_LON,//103
 TEST_SET_LOFF,//104
 TEST_SET_ALARM_LIMIT,//105
 TEST_SET_COND_POT_VALUE, //106
+TEST_GET_ALARM_TABLE, //107
+TEST_GET_SYSTEM_STATE, //108
+TEST_GET_ALARM_LIMIT, //109
+TEST_GET_IIC_BUFFER, //
 
 
 
@@ -129,6 +133,8 @@ TEST_COMMAND_MAX
 
 }Cl_Testcommandtype;
 
+#ifndef DATASTREAMTYPE
+#define DATASTREAMTYPE
 typedef union{
 	
 	uint8_t bytearray[4] ;
@@ -136,6 +142,8 @@ typedef union{
 	uint32_t word ;
 	
 }cl_Datastreamtype;
+
+#endif
 	
 typedef enum 
 {
@@ -175,5 +183,10 @@ typedef enum
 }Cl_TestSensortype;
 
 
-
+typedef struct {
+	
+	int16_t test_sensord_data;
+	bool test_flag;
+	
+}testsensorType;
 #endif /* CL_TESTHARNESS_H_ */

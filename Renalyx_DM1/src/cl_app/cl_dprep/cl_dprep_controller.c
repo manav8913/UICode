@@ -14,10 +14,13 @@
 #include "cl_app/cl_heatcntrl/inc/cl_heatercontroller.h"
 #include "cl_app/cl_bc_cntrl/inc/Cl_bc_controller.h"
 #include "cl_app/cl_dprep/inc/cl_dprep_primecontroller.h"
+#include "cl_app/cl_dlsis/inc/cl_dlsis_controller.h"
 #include "cl_app/cl_status/inc/cl_status.h"
 #include "asf.h"
+#include "cl_app/cl_cal/calibration.h"
 
-
+extern uint8_t sv_cs_setpotvalue(uint32_t resistance) ;
+extern uint32_t Treatdata[ID_MAX_TREAT_PARAM] ;
 Cl_ReturnCodes Cl_dprep_init(void);
 Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS);
 Cl_ReturnCodes  cl_dprep_translatemacevent(MAC_EVENTS ,Cl_Dprep_Events* );
@@ -57,8 +60,8 @@ Cl_ReturnCodes	Cl_Dprep_StartDialyserPrime(void);
 Cl_ReturnCodes Cl_dprep_StopMixing(void);
 
 Cl_ReturnCodes cl_dprep_activate_prime_related_alarms(void);
-
-
+ volatile uint8_t flag=0;
+extern volatile float cond_final_cs3;
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 extern Cl_ReturnCodes Cl_mac_apprequesthandler(MAC_EVENTS );
 extern Cl_ReturnCodes  sv_nvmgetdata(uint8_t,uint8_t*);
@@ -87,6 +90,13 @@ extern uint8_t sv_cntrl_activatevenousclamp(void);
 extern uint8_t sv_cntrl_deactivatevenousclamp(void);
 extern void sv_prop_startmixing();
 extern void sv_prop_stopmixing();
+extern uint8_t sv_cntrl_setredalarm();
+extern uint8_t sv_cntrl_setyellowalarm();
+extern uint8_t sv_cntrl_buzzer();
+extern uint8_t sv_cntrl_resetredalarm();
+extern uint8_t sv_cntrl_resetyellowalarm();
+extern uint8_t sv_cntrl_nobuzzer();
+
 extern uint8_t sv_cntrl_enable_loopback(void);
 extern uint8_t sv_cntrl_disable_loopback(void);
 extern Cl_Dlsis_SenddlsisData(void);
@@ -94,7 +104,7 @@ extern uint8_t sv_cntrl_enable_bypass(void);
 extern uint8_t sv_cntrl_disable_bypass(void);
 extern Cl_ReturnCodes cl_dprep_activate_prime_related_alarms(void);
 extern void calibration_apt(uint16_t sensordata);
-
+extern volatile float temprature_final_value_1,temprature_final_value_2,temprature_final_value_3;
 
 extern Cl_ConsoleMsgType Cl_ConsoleRxMsg;
 extern Cl_Dprep_PrimeStates cl_dprep_prime_state;
@@ -102,6 +112,7 @@ extern bool BC_window; //test
 extern bool g_testbcfreeze; //test
 extern bool Current_sense_trigger; // test
 extern float dummy3 ;
+extern Cl_Dprep_States cl_dprepstatedummy;
 extern Cl_AlarmThresholdType  Cl_alarmThresholdTable;
 extern volatile int16_t pressure_final_apt,pressure_final_vpt,pressure_final_ps1,pressure_final_ps2,pressure_final_ps3;
 
@@ -136,6 +147,10 @@ DprepAlarmsType Cl_DprepAlarmTable[CL_DPREP_ALRM_MAX] =
 	{BLOODDOOR_STATUS_OPEN,CL_ALARM_ALARM,false,false,false},
 	{HOLDER1STATUS_CLOSED,CL_ALARM_ALARM,false,false,false},
 	{HOLDER2STATUS_CLOSED,CL_ALARM_ALARM,false,false,false},
+	{HOLDER1STATUS_OPEN,CL_ALARM_ALARM,false,false,false},
+	{HOLDER2STATUS_OPEN,CL_ALARM_ALARM,false,false,false},
+	{ACID_IN,CL_ALARM_ALARM,false,false,false},
+	{BICARB_IN,CL_ALARM_ALARM,false,false,false},
 	{COND_STATUS_LOW,CL_ALARM_ALARM,false,false,false},
 	{COND_STATUS_HIGH,CL_ALARM_ALARM,false,false,false},
 	{COND_DAC_OPEN,CL_ALARM_ALARM,false,false,false},
@@ -149,10 +164,17 @@ DprepAlarmsType Cl_DprepAlarmTable[CL_DPREP_ALRM_MAX] =
 	{APTSTATUS_HIGH,CL_ALARM_ALARM,false,false,false},
 	{VPTSTATUS_HIGH,CL_ALARM_ALARM,false,false,false},
 	{PS1_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{PS1_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},
 	{PS2_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{PS2_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{PS3_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{PS3_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},
 	{TEMP1_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{TEMP1_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},	
 	{TEMP2_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{TEMP2_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},
 	{TEMP3_HIGH_THRESHOLD,CL_ALARM_ALARM,false,false,false},
+	{TEMP3_LOW_THRESHOLD,CL_ALARM_ALARM,false,false,false},
 	{FPCURRENTSTATUS,CL_ALARM_ALARM,false,false,false},
 
 };
@@ -186,7 +208,7 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 	uint16_t temp_temp3;
 	float temp3_cel=0;
 	uint16_t temp = 0;
-	
+	uint16_t tempcount;
 	cl_dprep_translatemacevent( Cl_MacDprepEvent, &cl_dprepevent);
 	
 	switch(cl_dprepevent)
@@ -194,6 +216,7 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 		case EVENT_DPREP_TICK_SECOND:
 		//Cl_dprepretcode = Cl_bc_controller(BC_EVENT_SECOND);
 		//Cl_dprepretcode = cl_dprep_primecontroller(CL_DPREP_PRIME_PRIME_TICK_SEC,0);
+		cl_dprepstatedummy = cl_dprepstate;
 		break;
 		case EVENT_DPREP_TICK_50MS:
 		//Cl_dprepretcode = Cl_bc_controller(BC_EVENT_50MS);
@@ -204,8 +227,8 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 	if(cl_dprepevent == EVENT_DPREP_TICK_SECOND)
 	{
 
-		Cl_dprepretcode =  Cl_AlarmResetAlarm( SENSOR_TEMP3STATUS );
-		Cl_dprepretcode =  Cl_AlarmResetAlarm( SENSOR_TEMP2STATUS );
+		//Cl_dprepretcode =  Cl_AlarmResetAlarm( SENSOR_TEMP3STATUS );
+		//Cl_dprepretcode =  Cl_AlarmResetAlarm( SENSOR_TEMP2STATUS );
 		Cl_dprepretcode =  Cl_AlarmResetAlarm( FLOW_NO_FLOW );
 		//	Cl_rinseretcode =  Cl_AlarmResetAlarm( FLOWSTATUS_FLOWOFF );
 	}
@@ -423,7 +446,9 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 				Cl_Dprep_ResetAlertsforReassertion();
 				Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp_temp3);
 					temp_temp3 = temp_temp3 * 0.805;
-					temp3_cel = 0.0000116 * temp_temp3 *temp_temp3 + 0.0035 *temp_temp3 + 11.157;
+					calibration_tmp(temp_temp3,TS3);
+					temp3_cel = temprature_final_value_3;
+					//temp3_cel = 0.0000116 * temp_temp3 *temp_temp3 + 0.0035 *temp_temp3 + 11.157;
 				if((temp3_cel) > 36.8 && (temp3_cel < 37.2))
 				{
 					if( cl_temp3_37stable == true) 
@@ -569,7 +594,41 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 						case EVENT_DPREP_MIXING_PREP_START:
 						Cl_Dprep_StartPreparation();
 						break;
-									default:break;
+						case EVENT_DPREP_TICK_MINUTE:
+						Cl_dprepretcode = Cl_Dprep_ResetAlertsforReassertion();
+						break;
+						case EVENT_DPREP_ALARM:
+						Cl_dprepretcode = Cl_Dprep_ProcessAlarms();
+						break;
+						case EVENT_DPREP_TICK_SECOND:
+							Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"ENTER",8);
+						for (tempcount = 0 ; tempcount < CL_DPREP_ALRM_MAX ; tempcount++)
+						{
+							
+							Cl_Alarm_GetAlarmStatus(Cl_DprepAlarmTable[tempcount].Cl_DprepAlarmId,&Cl_DprepAlarmTable[tempcount].IsActive);
+							if (Cl_DprepAlarmTable[tempcount].IsActive)
+							{
+								Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"ENTER_1",8);
+								Cl_Dprep_Stoppreparation();
+								Cl_dprepretcode = CL_DPREP_STATE_CRITICAL_ALARM;
+								tempcount=0;
+								break;
+							}
+							else if (tempcount == CL_DPREP_ALRM_MAX - 1)
+							{
+								if(!Cl_DprepAlarmTable[tempcount].IsActive)
+								{
+									Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"SAFE",8);
+									sv_cntrl_resetyellowalarm();
+									sv_cntrl_resetredalarm();
+									sv_cntrl_nobuzzer();
+									Cl_Dprep_StartPreparation();
+									Cl_dprepretcode = CL_DPREP_STATE_DPREP_FILLING;
+								}
+							}
+						}
+						break;
+						default:break;
 					}
 		break;
 		case CL_DPREP_STATE_DPREP_FILLING_DONE:
@@ -753,7 +812,8 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 						case  EVENT_DPREP_TICK_MINUTE:
 								Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp_temp3);
 								temp_temp3 = temp_temp3 * 0.805;
-								temp3_cel = 0.0000116 * temp_temp3 *temp_temp3 + 0.0035 *temp_temp3 + 11.157;
+								calibration_tmp(temp_temp3,TS3);
+								temp3_cel = temprature_final_value_3;
 								Cl_Dprep_filling_secondscounter++;
 					#if 0
 							//	if(!(Cl_Dprep_filling_secondscounter%20))
@@ -800,9 +860,10 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 						case EVENT_DPREP_TICK_SECOND:
 						//	UpdateHeaterControls();
 												Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp_temp3);
-					temp_temp3 = temp_temp3 * 0.805;
-					temp3_cel = 0.0000116 * temp_temp3 *temp_temp3 + 0.0035 *temp_temp3 + 11.157;
-					Cl_Dprep_filling_secondscounter++;
+												temp_temp3 = temp_temp3 * 0.805;
+												calibration_tmp(temp_temp3,TS3);
+												temp3_cel = temprature_final_value_3;
+											Cl_Dprep_filling_secondscounter++;
 					#if 0
 					if(!(Cl_Dprep_DialyserPrime_secondscounter%20))
 					{
@@ -910,20 +971,21 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 				
 				//uint16_t temp = 0;
 				
-					Cl_SysStat_GetSensor_Status_Query(BD_EVENT , &temp);
-					if( temp == 0)
-					{
+					//Cl_SysStat_GetSensor_Status_Query(SENSOR_BDSTATUS , &temp);
+					//if( temp == 0)
+					//{
 						
-							Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"BLOOD",5);
-					}
+							//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"BLOOD",5);
+					//}
 				//Cl_Dprep_SendPrepStateData();
 			//	Cl_Dprep_ResetAlertsforReassertion();
 			if(Cl_PatientState == CL_DPREP_PATIENT_STATE_WAITING_FOR_BD )
 			{
-				Cl_Alarm_GetAlarmStatus(BD_EVENT  , &cl_status);
+				Cl_SysStat_GetSensor_Status_Query(SENSOR_BDSTATUS , &temp);
 				
-				//	if(cl_status == true)
+					if(temp == 0)
 				{
+					Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"BLOOD",5);
 					//	Cl_dprepretcode = Cl_SendDatatoconsole(CON_TX_COMMAND_READY_FOR_DIALYSIS,NULL,0);
 					//	cl_dprepstate = CL_DPREP_STATE_READY_FOR_DALYSIS;
 									
@@ -954,7 +1016,7 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 					case EVENT_DPREP_TICK_SECOND:
 									
 				
-					Cl_SysStat_GetSensor_Status_Query(BD_EVENT , &temp);
+					Cl_SysStat_GetSensor_Status_Query(SENSOR_BDSTATUS , &temp);
 					if( temp == 0)
 					{
 						
@@ -1358,29 +1420,39 @@ Cl_ReturnCodes  CL_DrepAlarmActon(Cl_NewAlarmIdType cl_dprepalarmid)
 	switch(cl_dprepalarmid)
 	{
 			case BLOODDOOR_STATUS_OPEN:
-			Cl_Dprep_Stoppreparation();
-			//NewAlarmId = BLOODDOOR_STATUS_OPEN;
-			 Cl_Dprep_Stoppreparation();
-			cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
-			//Cl_SysStat_GetSensor_Status_Query(HOLDER1STATUS_OPEN,&levelswitchstatus);
-			
+				sv_cntrl_setredalarm();
+				sv_cntrl_buzzer();
+				Cl_Dprep_Stoppreparation();
+				cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
 			break;
 
 			case HOLDER1STATUS_OPEN:
-			// stop rinsing
-			NewAlarmId = HOLDER1STATUS_OPEN;
-			 Cl_Dprep_Stoppreparation();
+			case HOLDER2STATUS_OPEN:
+				sv_cntrl_setredalarm();
+				sv_cntrl_buzzer();
+				Cl_Dprep_Stoppreparation();
+				cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
+			break;
+			
+			case HOLDER1STATUS_CLOSED:
+			case HOLDER2STATUS_CLOSED:
+			sv_cntrl_setredalarm();
+			sv_cntrl_buzzer();
+			Cl_Dprep_Stoppreparation();
 			cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
 			//Cl_SysStat_GetSensor_Status_Query(HOLDER1STATUS_OPEN,&levelswitchstatus);
 			//enterl_saferinse_state();
 			break;
-			case HOLDER2STATUS_OPEN:
-			// stop rinsing
-			//NewAlarmId = HOLDER2STATUS_OPEN;
-			 Cl_Dprep_Stoppreparation();
+			
+			case ACID_IN:
+			case BICARB_IN:
+			sv_cntrl_setredalarm();
+			sv_cntrl_buzzer();
+			Cl_Dprep_Stoppreparation();
 			cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
 			//enterl_saferinse_state();
 			break;
+			
 			case LEVELSWITCH_OFF_TO_ON:
 			// TURN OFF  WATER INLET
 		//	Cl_SysStat_GetSensor_Status_Query(LEVELSWITCH_OFF_TO_ON,&levelswitchstatus);
@@ -1412,45 +1484,64 @@ Cl_ReturnCodes  CL_DrepAlarmActon(Cl_NewAlarmIdType cl_dprepalarmid)
 			}
 			break;
 			case TEMP3_HIGH_THRESHOLD:
-	
-		//	Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&TmpVal);
-		//	int16_t temp3,temp4;
-		//	temp3 = (0.805 * TmpVal) - 1004 ;
-		//	temp4 = 3000 + (temp3 * 1000)/382;
-		//	if(temp4 > 3680)
-			{
-			//		NewAlarmId = _TEMP3_HIGH_THRESHOLD;
-					Cl_Dprep_Stoppreparation();
-	
-					cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
-			}
-		//	if(temp4 < 3500)
-			{
-			//	NewAlarmId = _TEMP3_LOW_THRESHOLD;
-			//	Cl_Dprep_Stoppreparation();
-
-			//	cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
-			}
-			//Cl_Rinse_StopRinse();
-			//enterl_saferinse_state();
+			case TEMP3_LOW_THRESHOLD:
+				sv_cntrl_setyellowalarm();
+				sv_cntrl_buzzer();
+				Cl_Dprep_Stoppreparation();
+				cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
 
 			break;
+			
+			case TEMP2_HIGH_THRESHOLD:
+			case TEMP2_LOW_THRESHOLD:
+			sv_cntrl_setyellowalarm();
+			sv_cntrl_buzzer();
+			Cl_Dprep_Stoppreparation();
+			cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
+
+			break;
+			
+			case TEMP1_HIGH_THRESHOLD:
+			case TEMP1_LOW_THRESHOLD:
+			sv_cntrl_setyellowalarm();
+			sv_cntrl_buzzer();
+			Cl_Dprep_Stoppreparation();
+			cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
+
+			break;
+			
 			case 	PS1_HIGH_THRESHOLD:
-			//	NewAlarmId = _PS1_HIGH_THRESHOLD;
-			 Cl_Dprep_Stoppreparation();
+			case	PS1_LOW_THRESHOLD:
+			sv_cntrl_setyellowalarm();
+			sv_cntrl_buzzer();
+			Cl_Dprep_Stoppreparation();
 			cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
-			//enterl_saferinse_state();
-			case	PS2_HIGH_THRESHOLD:
-			//	NewAlarmId = _PS2_HIGH_THRESHOLD;
-			 Cl_Dprep_Stoppreparation();
-			cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
-			//enterl_saferinse_state();
-			case	PS3_HIGH_THRESHOLD:
-			//	NewAlarmId = _PS3_HIGH_THRESHOLD;
-			 Cl_Dprep_Stoppreparation();
-			cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
-			//enterl_saferinse_state();
 			break;
+			
+			case 	PS2_HIGH_THRESHOLD:
+			case	PS2_LOW_THRESHOLD:
+				sv_cntrl_setyellowalarm();
+				sv_cntrl_buzzer();
+				Cl_Dprep_Stoppreparation();
+				cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
+			break;
+			
+			case 	PS3_HIGH_THRESHOLD:
+			case	PS3_LOW_THRESHOLD:
+				sv_cntrl_setyellowalarm();
+				sv_cntrl_buzzer();
+				Cl_Dprep_Stoppreparation();
+				cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
+			break;
+			
+			case 	COND_STATUS_HIGH:
+			case	COND_STATUS_LOW:
+			sv_cntrl_setyellowalarm();
+			sv_cntrl_buzzer();
+			Cl_Dprep_Stoppreparation();
+			cl_dprepstate = CL_DPREP_STATE_CRITICAL_ALARM;
+			//enterl_saferinse_state();
+			break;	
 			
 			case APTSTATUS_HIGH:
 						// Cl_Dprep_Stoppreparation();
@@ -1498,7 +1589,9 @@ Cl_ReturnCodes  CL_DrepAlarmActon(Cl_NewAlarmIdType cl_dprepalarmid)
 			Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&cl_temp3);
 			Cl_SysStat_GetSensor_Status_Query(SENSOR_COND_STATUS,&cl_cond);
 			temp = cl_temp3 * 0.805;
-			cl_temp3_cel = 0.0000116 * temp *temp + 0.0035 *temp + 11.157;
+			calibration_tmp(temp,TS3);
+			cl_temp3_cel = temprature_final_value_3;
+			//cl_temp3_cel = 0.0000116 * temp *temp + 0.0035 *temp + 11.157;
 			  
 			if(cl_cond > 13000000)
 			{
@@ -1684,7 +1777,7 @@ Cl_ReturnCodes Cl_Dprep_SendtreatementData(void)
 }
 Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype)
 {
-
+	static float avgcond = 0;
 	uint8_t systemdataarray[40] =  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	cl_PrepDatatype tempdata;
 	int16_t temp, temp1;
@@ -1705,23 +1798,42 @@ Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype)
 
 					Cl_SysStat_GetSensor_Status_Query(SENSOR_COND_STATUS,&temp);
 					{
-						tempdata.word = temp;
-
-						if( temp < 0)
+						int16_t sensordata=0;
+						sensordata = temp;
+							float cond_comp;
+					if( sensordata < 0)
+					{
+						//temp = 0;
+						avgcond = 0;
+					}
+					if( sensordata > 2400)
+					{
+						float temp,temp1;
+						temp = sensordata * 0.805;
+						//avgcond = temp1/29.6 + 11;
+						//avgcond = avgcond * (1- ((avgtmp3- 25) * 0.02));
+						/*temp=sensordata  * 0.805;
+						avgcond=temp*4.48;
+						avgcond = (avgcond)/100;*/
+						calibration_cond(temp);
+						avgcond =(avgcond*10 + cond_final_cs3)/11;
+						Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp);
 						{
-								temp = 0;
-							//	avgcond = 0;
-						}
-						if( temp > 2400)
-						{
-							tempdata.word = temp/20 + 9;
-						}
-						else
-						{
-							tempdata.word = 100;
+							float temp_comp;
+							temp_comp = temp * 0.805;
+							calibration_tmp(temp_comp,TS3);
+							avgtmp3 =(avgtmp3*5 + temprature_final_value_3)/6;
+							cond_comp= avgcond/(1+(avgtmp3-25.0)*0.021);
 						}
 						
-						tempdata.word = 139;
+					}
+					else
+					{
+						//avgcond = dummy1;
+						avgcond=100;
+					}
+						
+						tempdata.word = (cond_comp/10);
 						systemdataarray[count++] = tempdata.bytearray[0];
 						systemdataarray[count++] = tempdata.bytearray[1];
 						systemdataarray[count++] = tempdata.bytearray[2];
@@ -1735,8 +1847,8 @@ Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype)
 			tempdata.word = temp;
 			float ftemp,ftemp1;
 			ftemp = tempdata.word * 0.805;
-			ftemp1 = 0.0000116 * ftemp *ftemp + 0.0035 *ftemp + 11.157 + 0.2;
-			avgtmp3 =	(avgtmp3*5 + ftemp1)/6;
+			calibration_tmp(ftemp,TS3);
+			avgtmp3 =(avgtmp3*5 + temprature_final_value_3)/6;
 			//avgtmp3 = dummy3 ;
 			tempdata.word = (uint16_t)(avgtmp3 * 10);
 			systemdataarray[count++] = tempdata.bytearray[0];
@@ -1754,7 +1866,7 @@ Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype)
 		//	ftemp1 = 0.0000116 * ftemp *ftemp + 0.0035 *ftemp + 11.157 + 0.6;
 		//	avgtmp3 =	(avgtmp3*5 + ftemp1)/6;
 		//	data.twobytedata = (uint16_t)(avgtmp3 * 100);
-							sensordatamillivolts = (tempdata.Twobyte * 0.793) ;
+							sensordatamillivolts = (tempdata.Twobyte * 0.805) ;
 							calibration_apt(sensordatamillivolts);
 							tempdata.word	 = pressure_final_apt;
 							systemdataarray[count++] = tempdata.bytearray[0] ;
@@ -1770,7 +1882,7 @@ Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype)
 			//	ftemp1 = 0.0000116 * ftemp *ftemp + 0.0035 *ftemp + 11.157 + 0.6;
 						//	avgtmp3 =	(avgtmp3*5 + ftemp1)/6;
 						//	data.twobytedata = (uint16_t)(avgtmp3 * 100);
-					sensordatamillivolts = (tempdata.Twobyte * 0.793) ;
+					sensordatamillivolts = (tempdata.Twobyte * 0.805) ;
 					calibration_apt(sensordatamillivolts);
 					tempdata.word	 = pressure_final_vpt;
 					tempdata.word	 = 30 * 100;
@@ -1780,11 +1892,11 @@ Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype)
 					systemdataarray[count++] = tempdata.bytearray[3] ;
 		}
 		Cl_SysStat_GetSensor_Status_Query(SENSOR_PS1STATUS,&tempdata.Twobyte);
-							sensordatamillivolts = (tempdata.Twobyte * 0.793) ;
+							sensordatamillivolts = (tempdata.Twobyte * 0.805) ;
 							calibration_apt(sensordatamillivolts);
 							
 		Cl_SysStat_GetSensor_Status_Query(SENSOR_PS2STATUS,&tempdata.Twobyte);
-							sensordatamillivolts = (tempdata.Twobyte * 0.793) ;
+							sensordatamillivolts = (tempdata.Twobyte * 0.805) ;
 							calibration_apt(sensordatamillivolts);
 							tempdata.word	 = ((pressure_final_apt + pressure_final_vpt ) - (pressure_final_ps1+pressure_final_ps2))/2;
 
@@ -1857,10 +1969,23 @@ Cl_ReturnCodes Cl_Dprep_ResetAlertsforReassertion(void )
 	Cl_NewAlarmIdType cl_dprepalarmid;
 	
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_BLOODDOOR_STATUS_OPEN].IsRaised = false;
+	Cl_AlarmResetAlarm(BLOODDOOR_STATUS_OPEN);
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_HOLDER1STATUS_CLOSED].IsRaised = false;
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_HOLDER2STATUS_CLOSED].IsRaised = false;
+	Cl_AlarmResetAlarm(HOLDER1STATUS_CLOSED);
+	Cl_AlarmResetAlarm(HOLDER2STATUS_CLOSED);
+	Cl_DprepAlarmTable[CL_DPREP_ALARM_HOLDER1STATUS_OPEN].IsRaised = false;
+	Cl_DprepAlarmTable[CL_DPREP_ALARM_HOLDER2STATUS_OPEN].IsRaised = false;
+	Cl_AlarmResetAlarm(HOLDER1STATUS_OPEN);
+	Cl_AlarmResetAlarm(HOLDER2STATUS_OPEN);
+	Cl_DprepAlarmTable[CL_DPREP_ALARM_ACID_IN].IsRaised = false;
+	Cl_AlarmResetAlarm(ACID_IN);
+	Cl_DprepAlarmTable[CL_DPREP_ALARM_BICAR_IN].IsRaised = false;
+	Cl_AlarmResetAlarm(BICARB_IN);
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_COND_STATUS_LOW].IsRaised = false;
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_COND_STATUS_HIGH].IsRaised = false;
+	Cl_AlarmResetAlarm(COND_STATUS_HIGH);
+	Cl_AlarmResetAlarm(COND_STATUS_LOW);
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_COND_DAC_OPEN].IsRaised = false;
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_COND_DAC_RO].IsRaised = false;
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_COND_DAC_HIGH].IsRaised = false;
@@ -1872,11 +1997,30 @@ Cl_ReturnCodes Cl_Dprep_ResetAlertsforReassertion(void )
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_APTSTATUS_HIGH].IsRaised = false;
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_VPTSTATUS_HIGH].IsRaised = false;
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_PS1_HIGH_THRESHOLD].IsRaised = false;
+	Cl_DprepAlarmTable[CL_DPREP_ALARM_PS1_LOW_THRESHOLD].IsRaised = false;
+	Cl_AlarmResetAlarm(PS1_HIGH_THRESHOLD);
+	Cl_AlarmResetAlarm(PS1_LOW_THRESHOLD);
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_PS2_HIGH_THRESHOLD].IsRaised = false;
+	Cl_DprepAlarmTable[CL_DPREP_ALARM_PS2_LOW_THRESHOLD].IsRaised = false;
+	Cl_AlarmResetAlarm(PS2_HIGH_THRESHOLD);
+	Cl_AlarmResetAlarm(PS2_LOW_THRESHOLD);
+	Cl_DprepAlarmTable[CL_DPREP_ALARM_PS3_HIGH_THRESHOLD].IsRaised = false;
+	Cl_DprepAlarmTable[CL_DPREP_ALARM_PS3_LOW_THRESHOLD].IsRaised = false;
+	Cl_AlarmResetAlarm(PS3_HIGH_THRESHOLD);
+	Cl_AlarmResetAlarm(PS3_LOW_THRESHOLD);
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_FLOW_LOW_FLOWRATE].IsRaised = false;
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_TEMP1_HIGH_THRESHOLD].IsRaised = false;
+	Cl_DprepAlarmTable[CL_DPREP_ALARM_TEMP1_LOW_THRESHOLD].IsRaised = false;
+	Cl_AlarmResetAlarm(TEMP1_HIGH_THRESHOLD);
+	Cl_AlarmResetAlarm(TEMP1_LOW_THRESHOLD);
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_TEMP2_HIGH_THRESHOLD].IsRaised = false;
+	Cl_DprepAlarmTable[CL_DPREP_ALARM_TEMP2_LOW_THRESHOLD].IsRaised = false;
+	Cl_AlarmResetAlarm(TEMP2_HIGH_THRESHOLD);
+	Cl_AlarmResetAlarm(TEMP2_LOW_THRESHOLD);
 	Cl_DprepAlarmTable[CL_DPREP_ALARM_TEMP3_HIGH_THRESHOLD].IsRaised = false;
+	Cl_DprepAlarmTable[CL_DPREP_ALARM_TEMP3_LOW_THRESHOLD].IsRaised = false;
+	Cl_AlarmResetAlarm(TEMP3_HIGH_THRESHOLD);
+	Cl_AlarmResetAlarm(TEMP3_LOW_THRESHOLD);
 
 	return (Cl_dprepretcode);
 	
@@ -2404,21 +2548,25 @@ Cl_ReturnCodes	Cl_Dprep_StartPreparation(void)
 												
 							Cl_dprepretcode = Cl_DprepSelectDialysateInlet();
 							//Cl_DprepFlowOn();
-
+							Cl_Dprep_ResetAlertsforReassertion();
 							data = 1;
 							Cl_dprepretcode = Cl_SendDatatoconsole(CON_TX_COMMAND_DLSIS_PREP_CNFRM,&data,0);	
 							Cl_dprepretcode = Cl_SendDatatoconsole(CON_TX_COMMAND_DIALYSATE_FILLING_STARTED,&data,0);																			
-
+							Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(ACID_IN,LOGIC_HIGH,0,0,0);
+							Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(BICARB_IN,LOGIC_HIGH,0,0,0);
 						
 					//		Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(HOLDER1STATUS_OPEN,LOGIC_LOW,0,0,0);
 					//		Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(HOLDER2STATUS_OPEN,LOGIC_LOW,0,0,0);
 							
-							Cl_dprepretcode =  Cl_AlarmActivateAlarms(BLOODDOOR_STATUS_OPEN,true );
+							//Cl_dprepretcode =  Cl_AlarmActivateAlarms(BLOODDOOR_STATUS_OPEN,true );
+							Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(HOLDER2STATUS_OPEN,LOGIC_HIGH,0,0,0);
+							Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(HOLDER1STATUS_OPEN,LOGIC_HIGH,0,0,0);
 							Cl_dprepretcode =  Cl_AlarmActivateAlarms(LEVELSWITCH_OFF_TO_ON,true );
 							Cl_dprepretcode =  Cl_AlarmActivateAlarms(LEVELSWITCH_ON_TO_OFF,true );
 							Cl_dprepretcode =  sv_cntrl_activatevenousclamp();
 							
-
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(ACID_IN,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(BICARB_IN,true );
 							Cl_dprepretcode =  Cl_AlarmActivateAlarms(HOLDER1STATUS_OPEN,true );
 							Cl_dprepretcode =  Cl_AlarmActivateAlarms(HOLDER2STATUS_OPEN,true );
 							
@@ -2426,22 +2574,23 @@ Cl_ReturnCodes	Cl_Dprep_StartPreparation(void)
 							Cl_dprepretcode =  Cl_AlarmActivateAlarms(FLOW_NO_FLOW,true );					
 							Cl_dprepretcode =  Cl_AlarmActivateAlarms(FLOW_LOW_FLOWRATE,true );
 							Cl_dprepretcode =  Cl_AlarmActivateAlarms(FLOW_HIGH_FLOWRATE,true );
-							Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_STATUS_HIGH,true );
-							Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_STATUS_LOW,true );
+							//Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_STATUS_HIGH,true );
+							//Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_STATUS_LOW,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS1_HIGH_THRESHOLD,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS1_LOW_THRESHOLD,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS2_HIGH_THRESHOLD,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS2_LOW_THRESHOLD,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS3_HIGH_THRESHOLD,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS3_LOW_THRESHOLD,true );
 							
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP1_HIGH_THRESHOLD,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP1_LOW_THRESHOLD,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP2_HIGH_THRESHOLD,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP2_LOW_THRESHOLD,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP3_HIGH_THRESHOLD,true );
+							Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP3_LOW_THRESHOLD,true );
 							
-						//	Cl_dprepretcode =  Cl_AlarmActivateAlarms(SENSOR_TEMP3STATUS,true );
-						//	Cl_dprepretcode =  Cl_AlarmActivateAlarms(SENSOR_TEMP2STATUS,true );
-							
-							
-						//	Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS1STATUS_HIGH,true );
-						//	Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS2STATUS_HIGH,true );
-							
-						//	Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS3STATUS_HIGH,true );
-						//	Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_STATUS_HIGH,true );
-							
-						//	Cl_dprepretcode =  Cl_AlarmActivateAlarms(APTSTATUS_HIGH,true );
-						//	Cl_dprepretcode =  Cl_AlarmActivateAlarms(VPTSTATUS_HIGH,true );
+						
 							if(Current_sense_trigger)
 							{
 								Cl_dprepretcode =  Cl_AlarmActivateAlarms( FPCURRENTSTATUS,true );
@@ -2450,6 +2599,30 @@ Cl_ReturnCodes	Cl_Dprep_StartPreparation(void)
 							{
 								//			Cl_rinseretcode =  Cl_AlarmActivateAlarms( PS3STATUS_HIGH,true );
 							}
+							uint32_t temp = Treatdata[ID_dflow];
+							switch (temp)
+							{
+								case 800:
+									Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"800",3);
+									sv_cntrl_setpumpspeed(DCMOTOR2,900);
+								    sv_cntrl_setpumpspeed(DCMOTOR1,960);
+									sv_cs_setpotvalue(2600);
+								break;
+								case 500:
+									Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"500",3);
+									sv_cntrl_setpumpspeed(DCMOTOR2,900);
+									sv_cntrl_setpumpspeed(DCMOTOR1,650);
+									sv_cs_setpotvalue(1700);
+								break;
+								case 300:
+									Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"300",5);
+									sv_cntrl_setpumpspeed(DCMOTOR2,900);
+									sv_cntrl_setpumpspeed(DCMOTOR1,360);
+									sv_cs_setpotvalue(1400);
+								break;
+								default:
+								break;
+							}
 							Cl_dprepretcode =  sv_cntrl_activatepump(DCMOTOR1);
 							Cl_dprepretcode =  sv_cntrl_activatepump(DCMOTOR2);
 							Cl_dprepretcode = Cl_bc_controller(BC_EVENT_RESUME);
@@ -2457,7 +2630,7 @@ Cl_ReturnCodes	Cl_Dprep_StartPreparation(void)
 							sv_prop_startmixing();
 							Cl_dprepretcode = SetHeaterState(CL_HEATER_STATE_ON);
 							cl_dprepstate = CL_DPREP_STATE_DPREP_FILLING;
-							Cl_Dprep_ResetAlertsforReassertion();
+							
 							return 0;
 				
 	}
@@ -2472,33 +2645,45 @@ Cl_ReturnCodes	Cl_Dprep_StartPreparation(void)
 				
 			Cl_dprepMinutescounter = 0;
 			Cl_dprepsecondscounter = 0;
+			Cl_Dprep_ResetAlertsforReassertion();
 			//cl_dprepstate = CL_DPREP_STATE_DIALISER_PRIME;
 			//Cl_dprepretcode = Cl_SendDatatoconsole(CON_TX_COMMAND_START_DIALISER_PRIME_CNFRM,&data,0);
 			
 			//check bypass switches
 		//	cl_dprep_primecontroller(CL_DPREP_PRIME_BLOODPUMP_START,0);
 			Cl_dprepretcode = Cl_DprepSelectDialysateInlet();
-			Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(BLOODDOOR_STATUS_OPEN,LOGIC_LOW,0,0,0);
-			Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(HOLDER1STATUS_OPEN,LOGIC_LOW,0,0,0);
-			Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(HOLDER2STATUS_OPEN,LOGIC_LOW,0,0,0);
+			Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(BLOODDOOR_STATUS_OPEN,LOGIC_HIGH,0,0,0);
+			Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(HOLDER1STATUS_CLOSED,LOGIC_LOW,0,0,0);
+			Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(HOLDER2STATUS_CLOSED,LOGIC_LOW,0,0,0);
+			Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(ACID_IN,LOGIC_HIGH,0,0,0);
+			Cl_dprepretcode =  Cl_AlarmConfigureAlarmType(BICARB_IN,LOGIC_HIGH,0,0,0);
 			
-
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(BLOODDOOR_STATUS_OPEN,true );
 			Cl_dprepretcode =  Cl_AlarmActivateAlarms(LEVELSWITCH_OFF_TO_ON,true );
 			Cl_dprepretcode =  Cl_AlarmActivateAlarms(LEVELSWITCH_ON_TO_OFF,true );
 			
-
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(HOLDER1STATUS_OPEN,true );
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(HOLDER2STATUS_OPEN,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(ACID_IN,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(BICARB_IN,true );
 			
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(HOLDER1STATUS_CLOSED,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(HOLDER2STATUS_CLOSED,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(HOLDER1STATUS_OPEN,false );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(HOLDER2STATUS_OPEN,false );
 			
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(SENSOR_TEMP3STATUS,true );
-		//	Cl_dprepretcode =  Cl_AlarmActivateAlarms(SENSOR_TEMP2STATUS,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS1_HIGH_THRESHOLD,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS1_LOW_THRESHOLD,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS2_HIGH_THRESHOLD,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS2_LOW_THRESHOLD,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS3_HIGH_THRESHOLD,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS3_LOW_THRESHOLD,true );
 			
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP1_HIGH_THRESHOLD,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP1_LOW_THRESHOLD,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP2_HIGH_THRESHOLD,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP2_LOW_THRESHOLD,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP3_HIGH_THRESHOLD,true );
+			Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP3_LOW_THRESHOLD,true );
 			
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS1STATUS_HIGH,true );
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS2STATUS_HIGH,true );
-			
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(PS3STATUS_HIGH,true );
 	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_STATUS_HIGH,true );
 	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_STATUS_LOW,true );
 	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_DAC_OPEN,true );
@@ -2515,10 +2700,36 @@ Cl_ReturnCodes	Cl_Dprep_StartPreparation(void)
 			{
 				//			Cl_rinseretcode =  Cl_AlarmActivateAlarms( PS3STATUS_HIGH,true );
 			}
-			
+			uint32_t temp = Treatdata[ID_dflow];
+			switch (temp)
+			{
+				case 800:
+				sv_cntrl_setpumpspeed(DCMOTOR2,900);
+				sv_cntrl_setpumpspeed(DCMOTOR1,960);
+				sv_cs_setpotvalue(2600);
+				break;
+				
+				case 500:
+				Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"500",3);
+				sv_cntrl_setpumpspeed(DCMOTOR2,900);
+				sv_cntrl_setpumpspeed(DCMOTOR1,650);
+				sv_cs_setpotvalue(1700);
+				break;
+				
+				case 300:
+				sv_cntrl_setpumpspeed(DCMOTOR2,900);
+				sv_cntrl_setpumpspeed(DCMOTOR1,360);
+				sv_cs_setpotvalue(1400);
+				break;
+				
+				default:
+				break;
+			}
 			Cl_dprepretcode =  sv_cntrl_activatepump(DCMOTOR1);
 			Cl_dprepretcode =  sv_cntrl_activatepump(DCMOTOR2);
+			
 			Cl_dprepretcode =  sv_cntrl_disable_bypass();
+			
 			if(cl_dprep_prime_state != CL_DPREP_PRIME_STATE_DIALYSER_PRIMING)
 			{
 				cl_dprep_primecontroller(CL_DPREP_PRIME_PRIME_START_DIALYSER_PRIMING,0);

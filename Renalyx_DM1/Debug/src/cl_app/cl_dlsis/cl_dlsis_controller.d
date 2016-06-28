@@ -164,7 +164,8 @@ src/cl_app/cl_dlsis/cl_dlsis_controller.d \
  ../src/cl_app/cl_dlsis/../comp/heparinpumpcontrl/inc/cl_heparincontroller.h \
  ../src/cl_app/cl_dlsis/../comp/ufpumpcontrl/inc/cl_ufPumpController.h \
  ../src/cl_app/cl_dlsis/../comp/bloodpumpcntrl/inc/cl_bloodpumpcontroller.h \
- ../src/cl_app/cl_status/inc/cl_status.h
+ ../src/cl_app/cl_status/inc/cl_status.h \
+ ../src/cl_app/cl_cal/calibration.h
 
 ../src/cl_app/cl_mac/inc/cl_mac_controller.h:
 
@@ -515,3 +516,5 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/cl_app/cl_dlsis/../comp/bloodpumpcntrl/inc/cl_bloodpumpcontroller.h:
 
 ../src/cl_app/cl_status/inc/cl_status.h:
+
+../src/cl_app/cl_cal/calibration.h:

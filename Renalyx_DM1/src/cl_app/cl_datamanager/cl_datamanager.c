@@ -25,7 +25,7 @@ Cl_ReturnCodes cl_datamamanager(MAC_EVENTS cl_data_event)
 	Cl_ReturnCodes cl_data_ret_val = CL_ERROR;
 	Cl_ConsoleTxCommandtype command = CON_TX_COMMAND_COMMAND_MAX;
 	rxstreamtype datastream;
-	uint8_t dataarray[20] = {};
+	uint8_t dataarray[50] = {};
 	
 	switch(cl_data_event)
 	{
@@ -174,7 +174,7 @@ Cl_ReturnCodes cl_datamamanager(MAC_EVENTS cl_data_event)
 											cl_data_ret_val = Cl_SendDatatoconsole(command,&dataarray,14);
 						break;
 						case ID_b_treatmentdata:
-											datastream.word = Treatdata[ID_b_Conddata];
+											datastream.word = Treatdata[ID_setcond];
 											dataarray[2] = datastream.bytearray[0];
 											dataarray[3] = datastream.bytearray[1];
 											dataarray[4] = datastream.bytearray[2];
@@ -209,27 +209,22 @@ Cl_ReturnCodes cl_datamamanager(MAC_EVENTS cl_data_event)
 											dataarray[27] = datastream.bytearray[1];
 											dataarray[28] = datastream.bytearray[2];
 											dataarray[29] = datastream.bytearray[3];
-											datastream.word = Treatdata[ID_bloodratereturn];
+											datastream.word = Treatdata[ID_treattime];
 											dataarray[30] = datastream.bytearray[0];
 											dataarray[31] = datastream.bytearray[1];
 											dataarray[32] = datastream.bytearray[2];
 											dataarray[33] = datastream.bytearray[3];
-											datastream.word = Treatdata[ID_treattime];
+											datastream.word = Treatdata[ID_heprate];
 											dataarray[34] = datastream.bytearray[0];
 											dataarray[35] = datastream.bytearray[1];
 											dataarray[36] = datastream.bytearray[2];
 											dataarray[37] = datastream.bytearray[3];
-											datastream.word = Treatdata[ID_heprate];
+											datastream.word = Treatdata[ID_bolusvol];
 											dataarray[38] = datastream.bytearray[0];
 											dataarray[39] = datastream.bytearray[1];
 											dataarray[40] = datastream.bytearray[2];
 											dataarray[41] = datastream.bytearray[3];
-											datastream.word = Treatdata[ID_bolusvol];
-											dataarray[42] = datastream.bytearray[0];
-											dataarray[43] = datastream.bytearray[1];
-											dataarray[44] = datastream.bytearray[2];
-											dataarray[45] = datastream.bytearray[3];
-											cl_data_ret_val = Cl_SendDatatoconsole(command,&dataarray,46);
+											cl_data_ret_val = Cl_SendDatatoconsole(command,&dataarray,42);
 						break;
 						case ID_b_vpt:
 											datastream.word = Treatdata[ID_vptllimit];

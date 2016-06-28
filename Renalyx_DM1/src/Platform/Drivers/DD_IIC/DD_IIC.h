@@ -25,7 +25,7 @@ typedef struct
 }IIC_PROPO_CommandType;
 typedef struct
 {
-	uint8_t command;
+	uint32_t command;
 	uint8_t len;
 	bool pending;
 	

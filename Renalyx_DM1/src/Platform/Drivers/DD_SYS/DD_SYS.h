@@ -37,7 +37,14 @@ uint8_t DD_CONSOLE_TX(uint8_t sv_consoleTxdatabyte);
 uint8_t DD_CONFIG_TIMER(uint8_t timer_no, uint8_t timer_res);
 uint8_t DD_STOP_TIMER(uint8_t timer_no);
 uint8_t DD_SET_PUMPFREQ(sv_pumptype id_pump,uint32_t freq);
-
+uint8_t DD_SET_RED(void);
+uint8_t DD_SET_YELLOW(void);
+uint8_t DD_SET_GREEN(void);
+uint8_t DD_SET_BUZZER(void);
+uint8_t DD_RESET_RED(void);
+uint8_t DD_RESET_YELLOW(void);
+uint8_t DD_RESET_GREEN(void);
+uint8_t DD_RESET_BUZZER(void);
 uint8_t DD_SET_FLOW_PATH(sv_flowpathtype sv_flowpath);
 
 uint8_t DD_ENABLE_LOOPBACK(void);

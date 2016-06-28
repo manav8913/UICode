@@ -414,7 +414,7 @@ Cl_ReturnCodes Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype command, uint8_t* da
 
 
 		
-			if(( CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT == command)|| ( CON_TX_COMMAND_COMMAND_SCRIPT_BULK_PRINT == command) ||( command == CON_TX_COMMAND_PRINTDATA) ||(command == CON_TX_COMMAND_PRINTTEXT))
+			if(( CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT == command)|| ( command == CON_TX_COMMAND_PRINTDATA) ||(command == CON_TX_COMMAND_PRINTTEXT))
 			{
 				return;
 			}
@@ -644,8 +644,11 @@ Cl_ReturnCodes Cl_Console_ConvertConsoleEvent_toMacEvent(Cl_ConsoleRxEventsType 
 			*MacEvent = EVT_CONSOLE_COMMAND_DIALYSIS_PAUSE;
 		break;
 		
-		case CON_RX_COMMAND_DIALYSIS_BYPASS:
-			*MacEvent = EVT_CONSOLE_COMMAND_DIALYSIS_BYPASS;
+		case CON_RX_EVT_COMMAND_BYPASS_ON:
+			*MacEvent = EVT_CONSOLE_COMMAND_BYPASS_ON;
+		break;
+		case CON_RX_EVT_COMMAND_BYPASS_OFF:
+		*MacEvent = EVT_CONSOLE_COMMAND_BYPASS_OFF;
 		break;
 		case CON_RX_COMMAND_RINSE_STOP:
 			*MacEvent = EVT_CONSOLE_COMMAND_STOP_RINSE;
@@ -682,6 +685,20 @@ Cl_ReturnCodes Cl_Console_ConvertConsoleEvent_toMacEvent(Cl_ConsoleRxEventsType 
 		break;
 		case CON_RX_EVT_COMMAND_PATIENT_READY:
 		*MacEvent = EVT_CONSOLE_COMMAND_PATIENT_READY;
+		break;
+		
+		case CON_RX_EVT_COMMAND_START_RETURN:
+		*MacEvent = EVT_CONSOLE_COMMAND_START_RETURN;
+		break;
+		
+		case CON_RX_EVT_COMMAND_STOP_RETURN:
+		*MacEvent = EVT_CONSOLE_COMMAND_STOP_RETURN;
+		break;			
+		case CON_RX_EVT_COMMAND_MINUF_ON:
+		*MacEvent = EVT_CONSOLE_COMMAND_MINUF_ON;
+		break;
+		case CON_RX_EVT_COMMAND_MINUF_OFF:
+		*MacEvent = EVT_CONSOLE_COMMAND_MINUF_OFF;
 		break;
 		default:
 		break;

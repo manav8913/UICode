@@ -157,7 +157,8 @@ src/cl_app/cl_status/cl_sys_status.d src/cl_app/cl_status/cl_sys_status.o: \
  ../src/sv_stubs/inc/sv_stub.h ../src/sv_stubs/inc/sv_types.h \
  ../src/cl_app/cl_alarms/inc/cl_alarmdetector.h \
  ../src/cl_app/cl_console/inc/cl_consolecontroller.h \
- ../src/cl_app/cl_cal/calibration.h
+ ../src/cl_app/cl_cal/calibration.h \
+ ../src/cl_app/cl_testharness/inc/cl_th.h
 
 ../src/cl_app/cl_status/inc/cl_status.h:
 
@@ -496,3 +497,5 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/cl_app/cl_console/inc/cl_consolecontroller.h:
 
 ../src/cl_app/cl_cal/calibration.h:
+
+../src/cl_app/cl_testharness/inc/cl_th.h:

@@ -15,7 +15,8 @@
 extern Cl_ReturnCodes Cl_SysStat_GetSensor_Status_Query(Cl_SensorDeviceIdType, uint16_t*);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 
-
+extern uint8_t sv_cntrl_resetHepa_dir(void);
+extern uint8_t sv_cntrl_setHepa_dir(void);
 Cl_ReturnCodes cl_hep_pumpFeedback_timer(void);
 Cl_ReturnCodes cl_hep_pumpFeedback_start(void);
 Cl_ReturnCodes cl_hep_pumpFeedback_stop(void);
@@ -134,18 +135,13 @@ Cl_ReturnCodes cl_hep_pump_enddetction_timer(void) // 20 ms clock
 		// START END  DETECTION
 		{
 			Cl_SysStat_GetSensor_Status_Query(SENSOR_HP_START,&hp_start_status);
-			if(hp_start_status == 1)
-			{
-			//	cl_hep_pump_state = CL_HEP_P_STATE_READY_AT_START;
-			}
 			
 			if(	prev_hp_start_status != hp_start_status)
 			{
 				prev_hp_start_status = hp_start_status;
-				if(hp_start_status == 1)
+				if(hp_start_status == 0)
 				{
-					//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"HP_START",8);
-					//		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&hp_start_status,1);
+					sv_cntrl_resetHepa_dir();
 					
 				}
 			}
@@ -154,17 +150,14 @@ Cl_ReturnCodes cl_hep_pump_enddetction_timer(void) // 20 ms clock
 
 
 			Cl_SysStat_GetSensor_Status_Query(SENSOR_HP_END,&hp_end_status);
-			if(hp_end_status == 1)
-			{
-			//	cl_hep_pump_state = CL_HEP_P_STATE_STOPPED_AT_END;
-			}
+			
 			
 			if(	prev_hp_end_status != hp_end_status)
 			{
 				prev_hp_end_status = hp_end_status;
 				if(hp_end_status == 1)
 				{
-				//	cl_hep_pump_state = CL_HEP_P_STATE_STOPPED_AT_END;
+						sv_cntrl_setHepa_dir();
 					
 					//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"HP_END",8);
 					//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&hp_end_status,1);

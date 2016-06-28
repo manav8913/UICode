@@ -71,6 +71,8 @@ uint8_t testbool = false;
 Cl_Sys_statusType  cl_sys_statbuffer;
 extern volatile uint32_t g_ul_ms_ticks ;
 	uint32_t ul_cur_ticks, delayticks; // testing
+	
+extern MAC_STATES MacStateDummy;
 /******************* sanjeer := all protos  to be moved into res3epctive header file*/
 Cl_ReturnCodes	Cl_MacInit(void);
 Cl_ReturnCodes	Cl_MacConfigure(void);
@@ -261,7 +263,7 @@ PIOA->PIO_ABSR = 0x00090000;
 	{
 
 
-
+	MacStateDummy = Cl_MacState;
 	ul_cur_ticks = g_ul_ms_ticks;
 	
 		Cl_MacRetval = Cl_Mac_GetSystem_Status_Query();// check if there is any system updates . ALSO may be this can be moved to a timer thread
@@ -817,6 +819,8 @@ PIOA->PIO_ABSR = 0x00090000;
 						case EVT_TICK_500M:
 						case EVT_CONSOLE_COMMAND_PATIENT_CONNECTED:
 						case EVT_CONSOLE_COMMAND_PATIENT_READY:
+						case EVT_CONSOLE_COMMAND_BYPASS_ON:
+						case EVT_CONSOLE_COMMAND_BYPASS_OFF:
 						Cl_MacRetval = Cl_dprep_controller(Cl_MacEvent);
 						break;
 						
@@ -867,7 +871,8 @@ PIOA->PIO_ABSR = 0x00090000;
 						
 						case EVT_CONSOLE_COMMAND_DIALYSIS_STOP:
 						case EVT_CONSOLE_COMMAND_DIALYSIS_PAUSE:
-						case EVT_CONSOLE_COMMAND_DIALYSIS_BYPASS:
+						case EVT_CONSOLE_COMMAND_BYPASS_ON:
+						case EVT_CONSOLE_COMMAND_BYPASS_OFF:
 						Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
 							if( Cl_MacRetval == CL_OK)
 							{
@@ -933,6 +938,12 @@ PIOA->PIO_ABSR = 0x00090000;
 					//		Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
 						//	Cl_MacEvent = EVT_NULL;
 						//	break;
+						case EVT_CONSOLE_COMMAND_BYPASS_ON:
+						case EVT_CONSOLE_COMMAND_BYPASS_OFF:
+						Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
+						Cl_MacState = MAC_DIALYSIS;
+						break;
+						
 						case EVT_CONSOLE_COMMAND_DIALYSIS_START:
 							Cl_MacRetval = Cl_Standby_Controller(Cl_MacEvent);
 							if((Cl_MacRetval == CL_OK)||(Cl_MacRetval == CL_REJECTED))
@@ -962,6 +973,10 @@ PIOA->PIO_ABSR = 0x00090000;
 					switch ( Cl_MacEvent )
 				
 					{
+						case EVT_CONSOLE_COMMAND_BYPASS_ON:
+						case EVT_CONSOLE_COMMAND_BYPASS_OFF:
+						Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);
+						break;
 						case EVT_CONSOLE_COMMAND_DISINF_START:
 						
 						Cl_MacRetval = Cl_Dlsis_controller(Cl_MacEvent);

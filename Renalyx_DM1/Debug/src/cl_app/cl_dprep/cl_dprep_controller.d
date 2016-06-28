@@ -161,7 +161,9 @@ src/cl_app/cl_dprep/cl_dprep_controller.d \
  ../src/cl_app/cl_heatcntrl/inc/cl_heatercontroller.h \
  ../src/cl_app/cl_bc_cntrl/inc/Cl_bc_controller.h \
  ../src/cl_app/cl_dprep/inc/cl_dprep_primecontroller.h \
- ../src/cl_app/cl_status/inc/cl_status.h
+ ../src/cl_app/cl_dlsis/inc/cl_dlsis_controller.h \
+ ../src/cl_app/cl_status/inc/cl_status.h \
+ ../src/cl_app/cl_cal/calibration.h
 
 ../src/cl_app/inc/cl_types.h:
 
@@ -503,4 +505,8 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 
 ../src/cl_app/cl_dprep/inc/cl_dprep_primecontroller.h:
 
+../src/cl_app/cl_dlsis/inc/cl_dlsis_controller.h:
+
 ../src/cl_app/cl_status/inc/cl_status.h:
+
+../src/cl_app/cl_cal/calibration.h:

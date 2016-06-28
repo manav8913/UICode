@@ -15,6 +15,7 @@
 #include "cl_app/comp/deaeration/inc/cl_deaeration.h"
 #include "cl_app/cl_bc_cntrl/inc/Cl_bc_controller.h"
 #include "Platform/Service/sv_interface.h"
+#include "cl_app/cl_cal/calibration.h"
 
 
 Cl_ReturnCodes  cl_disinf_translatemacevent(MAC_EVENTS Cl_MacdisinfEvt,Cl_disinf_Eevents* cl_disinf_event);
@@ -30,7 +31,9 @@ Cl_ReturnCodes Cl_Disinf_StopDisinf(void);
  Cl_ReturnCodes Cl_Disinf_UpdateTimeInfo(void);
  Cl_ReturnCodes UpdateDisinfMinuteTick(void);
  Cl_ReturnCodes Cl_Disinf_SendDisinfStateData(void);
-
+extern volatile float temprature_final_value_1,temprature_final_value_2,temprature_final_value_3;
+extern volatile float pressure_final_apt,pressure_final_vpt,pressure_final_ps1,pressure_final_ps2,pressure_final_ps3;
+extern volatile float cond_final_cs3;
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 extern Cl_ReturnCodes  sv_nvmgetdata(uint8_t,uint8_t*);
 extern void sv_prop_startpropeo_aligning();
@@ -262,6 +265,7 @@ Cl_ReturnCodes Cl_disinf_controller(MAC_EVENTS Cl_MacDisinfEvent)
 							//wait for 1 min openfill before intake;
 							if(Cl_disinfOpenFillTimeOut)
 							{
+								Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"INT",3);
 								sv_prop_start_disinfect_intake();
 								cl_disinfstate = CL_DISINF_STATE_DISINF_INTAKE;
 								sec_count =0;
@@ -296,6 +300,7 @@ Cl_ReturnCodes Cl_disinf_controller(MAC_EVENTS Cl_MacDisinfEvent)
 							
 							if(sec_count > 20)
 							{
+								Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"ove",3);
 								sv_prop_stop_disinfect_intake();
 								Cl_disinfretcode =  sv_cntrl_deactivatepump(DCMOTOR2);
 								Cl_disinfretcode =  sv_cntrl_deactivatepump(DCMOTOR1);
@@ -724,6 +729,7 @@ Cl_ReturnCodes Cl_disinf_ResetAlertsforReassertion(void )
 
 Cl_ReturnCodes Cl_Disinf_SendDisinfStateData(void)
 {
+	static float avgcond = 0;
 	Cl_ReturnCodes  Cl_disinfretcode = CL_OK;
 	cl_DlsInfDatatype data;
 	uint8_t count=0;
@@ -755,8 +761,8 @@ Cl_ReturnCodes Cl_Disinf_SendDisinfStateData(void)
 		float ftemp,ftemp1;
 		data.word = 0;
 		ftemp = temp * 0.805;
-		ftemp1 = 0.0000116 * ftemp *ftemp + 0.0035 *ftemp + 11.157 + 0.6;
-		avgtmp3 =	(avgtmp3*5 + ftemp1)/6;
+		calibration_tmp(ftemp,TS3);
+		avgtmp3 =(avgtmp3*5 + temprature_final_value_3)/6;
 		data.Twobyte = (uint16_t)(avgtmp3 * 10);
 		dataarray[count++] = data.bytearray[0];
 		dataarray[count++] = data.bytearray[1];
@@ -785,30 +791,45 @@ Cl_ReturnCodes Cl_Disinf_SendDisinfStateData(void)
 	Cl_SysStat_GetSensor_Status_Query(COND_STATUS_HIGH,&temp);
 	{
 		
-		
-		
-		if( temp < 0)
-		{
-			temp = 0;
-			//	avgcond = 0;
-		}
-		
-		
-
-		
-		if( temp > 1000)
-		{
-			temp = temp/20 + 11;
-		}
-		else
-		{
-			temp = temp/5;
-		}
+		int16_t sensordata=0;
+						sensordata = temp;
+							float cond_comp;
+					if( sensordata < 0)
+					{
+						//temp = 0;
+						avgcond = 0;
+					}
+					if( sensordata > 2400)
+					{
+						float temp,temp1;
+						temp = sensordata * 0.805;
+						//avgcond = temp1/29.6 + 11;
+						//avgcond = avgcond * (1- ((avgtmp3- 25) * 0.02));
+						/*temp=sensordata  * 0.805;
+						avgcond=temp*4.48;
+						avgcond = (avgcond)/100;*/
+						calibration_cond(temp);
+						avgcond =(avgcond*10 + cond_final_cs3)/11;
+						Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp);
+						{
+							float temp_comp;
+							temp_comp = temp * 0.805;
+							calibration_tmp(temp_comp,TS3);
+							avgtmp3 =(avgtmp3*5 + temprature_final_value_3)/6;
+							cond_comp= avgcond/(1+(avgtmp3-25.0)*0.021);
+						}
+						
+					}
+					else
+					{
+						//avgcond = dummy1;
+						avgcond=100;
+					}
 		
 		
 		
 		data.word = 0;
-		data.Twobyte = temp;
+		data.Twobyte = (cond_comp/10);
 		dataarray[count++] = data.bytearray[0];
 		dataarray[count++] = data.bytearray[1];
 		dataarray[count++] = data.bytearray[2];

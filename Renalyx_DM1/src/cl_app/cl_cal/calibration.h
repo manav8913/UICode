@@ -39,7 +39,7 @@ void calibration_ps1(uint16_t sensordata);
 void calibration_ps2(uint16_t sensordata);
 void calibration_ps3(uint16_t sensordata);
 void calibration_vpt(uint16_t sensordata);
-void calibration_cond(uint32_t millivolts);
+void calibration_cond(float millivolts);
 void calibration_tmp(float millivolts , temp_state temp_var);
 void hep_calibration(uint32_t inpt_ml);
 

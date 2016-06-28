@@ -14,6 +14,7 @@
 #include "cl_app/cl_alarms/comp/inc/cl_conductivity_detector.h"
 #include "cl_app/cl_cal/calibration.h"
 
+#include "cl_app/cl_testharness/inc/cl_th.h"
 
 
 extern Cl_Mac_EventType Cl_MacEvent1;
@@ -23,6 +24,7 @@ extern bool TEST_STUB_ENABLEGATE;
 
 extern Levelswitch_msgType Levelswitch_msg;
 extern Flowswitch_msgType Flowswitch_msg;
+extern testsensorType test_sensor_status[SENSOR_MAX_INPUT];
 
 static uint32_t prev_flowstatus = 0;
 static uint32_t flow_watchdog = 0,flow_count=0,flow_count_rate = 0;
@@ -45,7 +47,7 @@ Cl_AlarmThresholdType  Cl_alarmThresholdTable;
 	float temp2 = 0,prev_temp2val = 0 ;
 	float temp3 = 0 , prev_temp3val = 0;
 	
-	float cond1 = 0;
+	float cond1 = 0, cond_final=0;
 	
 		
 Cl_ReturnCodes Cl_Init_Alarms(void);
@@ -74,9 +76,9 @@ extern Cl_ReturnCodes cl_get_dac_conductivity_info(Sys_dac_cond_alarmtype* );
 extern Cl_ReturnCodes cl_get_conductivity_info(Sys_cond_alarmtype* );
 extern Cl_ReturnCodes Cl_Temperature_Controller_Init(void);
 extern Cl_ReturnCodes  Cl_Pressure_Controller_Init(void);
-extern volatile float temprature_final_value_1,temprature_final_value_2,temprature_final_value_3;
-extern volatile int16_t pressure_final_apt,pressure_final_vpt,pressure_final_ps1,pressure_final_ps2,pressure_final_ps3;
-
+extern volatile float temprature_final_value_1,temprature_final_value_2,temprature_final_value_3,cond_final_cs3;
+extern volatile float pressure_final_apt,pressure_final_vpt,pressure_final_ps1,pressure_final_ps2,pressure_final_ps3;
+extern Cl_SysStat_GetSensor_Status_Query(Cl_SensorDeviceIdType dataID, uint16_t* pdata);
 Cl_ReturnCodes Cl_Init_Alarms(void)
 {
 	Cl_LoadAlarmThresholdTable();
@@ -86,7 +88,7 @@ Cl_ReturnCodes Cl_Init_Alarms(void)
 
 Cl_ReturnCodes Cl_LoadAlarmThresholdTable(void)
 {
-		Cl_alarmThresholdTable.cond_low_threshold = 0;
+		Cl_alarmThresholdTable.cond_low_threshold = 10;
 		Cl_alarmThresholdTable.cond_high_threshold = 10000;
 		Cl_alarmThresholdTable.cond_dac_high_threshold = 0;
 		Cl_alarmThresholdTable.cond_dac_low_threshold = 10000;
@@ -170,39 +172,124 @@ Cl_ReturnCodes Cl_translate_sensor_values(void)
 		ps3 = prev_ps3val;
 	}
 	#endif
+	
 	temp = ((cl_sys_statbuffer.ps1status* 3300 /4096) ) ;
 	calibration_ps1(temp);
-	ps1 =  pressure_final_ps1;
+	if(test_sensor_status[SENSOR_PS1STATUS].test_flag == true)
+	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TESTPS1",5);
+		ps1 =  test_sensor_status[SENSOR_PS1STATUS].test_sensord_data;
+		
+	}
+	else
+	{
+		ps1 = ((ps1* 49) + pressure_final_ps1)/50;
+	}
 	
 	temp = ((cl_sys_statbuffer.ps2status* 3300 /4096) ) ;
 	calibration_ps2(temp);
-	ps2 = ((ps2* 49) + pressure_final_ps2)/50;
-
+	if(test_sensor_status[SENSOR_PS2STATUS].test_flag == true)
+	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TESTPS2",5);
+		ps2 =  test_sensor_status[SENSOR_PS2STATUS].test_sensord_data;
+		
+	}
+	else
+	{
+		ps2 = ((ps2* 49) + pressure_final_ps2)/50;
+	}
+	
 	temp = ((cl_sys_statbuffer.ps3status* 3300 /4096) ) ;
 	calibration_ps3(temp);
-	ps3 =  pressure_final_ps3;
-
+	if(test_sensor_status[SENSOR_PS3STATUS].test_flag == true)
+	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TESTPS3",5);
+		ps3 =  test_sensor_status[SENSOR_PS3STATUS].test_sensord_data;			
+	}
+	else
+	{
+		ps3 = ((ps3* 49) + pressure_final_ps3)/50;
+	}
+				
 	temp = ((cl_sys_statbuffer.aptstatus * 3300 /4096) ) ;
 	calibration_apt(temp);
-	apt =  pressure_final_apt;
+	if(test_sensor_status[SENSOR_APTSTATUS].test_flag == true)
+	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TESTAPT",5);
+		apt =  test_sensor_status[SENSOR_APTSTATUS].test_sensord_data;
+	}
+	else
+	{
+		apt = ((apt* 49) + pressure_final_apt)/50;
+	}
 
 	temp = ((cl_sys_statbuffer.vptstatus * 3300 /4096) ) ;
 	calibration_vpt(temp);
-	vpt =  pressure_final_vpt;
+	if(test_sensor_status[SENSOR_VPTSTATUS].test_flag == true)
+	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TESTAPT",5);
+		vpt =  test_sensor_status[SENSOR_VPTSTATUS].test_sensord_data;
+	}
+	else
+	{
+		vpt = ((vpt* 49) + pressure_final_vpt)/50;
+	}
 
 	temp = cl_sys_statbuffer.Temp1status * 0.805;
 	calibration_tmp(temp,TS1);
-	temp1 = temprature_final_value_1;
+	if(test_sensor_status[SENSOR_TEMP1STATUS].test_flag == true)
+	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TESTT1",7);
+		temp1 =  test_sensor_status[SENSOR_TEMP1STATUS].test_sensord_data;
+	}
+	else
+	{
+		temp1 = ((temp1* 49) +temprature_final_value_1)/50;
+		//temp1=temp1*10;
+	}
 	
 	temp = cl_sys_statbuffer.Temp2status * 0.805;
 	calibration_tmp(temp,TS2);
-	temp2 = temprature_final_value_2;
+	if(test_sensor_status[SENSOR_TEMP2STATUS].test_flag == true)
+	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TESTT2",7);
+		temp2 =  test_sensor_status[SENSOR_TEMP2STATUS].test_sensord_data;
+	}
+	else
+	{
+		temp2 = ((temp2* 49) +temprature_final_value_2)/50;
+		//temp2=temp2*10;
+	}
 	
 	temp = cl_sys_statbuffer.Temp3status * 0.805;
 	calibration_tmp(temp,TS3);
-	temp3 = temprature_final_value_3;
-				
-
+	if(test_sensor_status[SENSOR_TEMP3STATUS].test_flag == true)
+	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TESTT3",7);
+		temp3 =  test_sensor_status[SENSOR_TEMP3STATUS].test_sensord_data;
+	}
+	else
+	{
+		temp3 = ((temp3* 49) +temprature_final_value_3)/50;
+		//temp3=temp3*10;
+	}
+	
+	temp = cl_sys_statbuffer.cond_status * 0.805;
+	calibration_cond(temp);
+	
+	if(test_sensor_status[SENSOR_COND_STATUS].test_flag == true)
+	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"TESTCOND",5);
+		cond_final =  test_sensor_status[SENSOR_COND_STATUS].test_sensord_data;
+		
+	}
+	else
+	{
+		cond1 = ((cond1* 10) + cond_final_cs3)/11;
+		cond_final= cond1/(1+(temp3-25.0)*0.021);
+		cond_final=cond_final/10;
+	}
+	
 }
 Cl_ReturnCodes Cl_alarms_scanforAlarms(void)
 {
@@ -210,11 +297,59 @@ Cl_ReturnCodes Cl_alarms_scanforAlarms(void)
 	
 	 Cl_translate_sensor_values();
 	
+	if (Cl_alarms_alarms[ACID_IN].cl_is_enabled)
+	{
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"ACID",4);
+		if(((Cl_alarms_alarms[ACID_IN].cl_triggertype == LOGIC_HIGH) && (cl_sys_statbuffer.acid_inlet_status )) || ((Cl_alarms_alarms[ACID_IN].cl_triggertype == LOGIC_LOW) && (!cl_sys_statbuffer.acid_inlet_status )) )
+		{
+			if(Cl_alarms_alarms[ACID_IN].cl_alarmstate != CL_ALARM_DETECTED)
+			{
+			Cl_alarms_alarms[ACID_IN].cl_alarmstate = CL_ALARM_DETECTED;
+			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=ACID_IN;
+			Cl_alarms_alarms[ACID_IN].cl_detected_count++;
+			cl_alarm_triggered = true;
+			cl_lastalarmid = ACID_IN;
+			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
+			Cl_UpdateMacAlarmEventTable();
+			}
+		}
+		else
+		{
+			Cl_alarms_alarms[ACID_IN].cl_alarmstate = CL_ALARM_INACTIVE;
+		}	
+	}
+	
+	if (Cl_alarms_alarms[BICARB_IN].cl_is_enabled)
+	{
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"BICA",4);
+		if(((Cl_alarms_alarms[BICARB_IN].cl_triggertype == LOGIC_HIGH) && (cl_sys_statbuffer.bicarb_inlet_status )) || ((Cl_alarms_alarms[BICARB_IN].cl_triggertype == LOGIC_LOW) && (!cl_sys_statbuffer.bicarb_inlet_status )) )
+		{
+			if(Cl_alarms_alarms[BICARB_IN].cl_alarmstate != CL_ALARM_DETECTED)
+			{
+			Cl_alarms_alarms[BICARB_IN].cl_alarmstate = CL_ALARM_DETECTED;
+			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=BICARB_IN;
+			Cl_alarms_alarms[BICARB_IN].cl_detected_count++;
+			cl_alarm_triggered = true;
+			cl_lastalarmid = BICARB_IN;
+			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
+			Cl_UpdateMacAlarmEventTable();
+			}
+		}
+		else
+		{
+			Cl_alarms_alarms[BICARB_IN].cl_alarmstate = CL_ALARM_INACTIVE;
+		}
+	}
 	
 	if(Cl_alarms_alarms[ABD_EVENT].cl_is_enabled)
 	{
-		if(cl_sys_statbuffer.abdstatus)
+		
+		if(!cl_sys_statbuffer.abdstatus)
 		{
+			//uint16_t temp_abd;
+			//temp_abd=cl_sys_statbuffer.abdstatus;
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"ABD=",4);
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_abd,2);
 			Cl_alarms_alarms[ABD_EVENT].cl_alarmstate = CL_ALARM_DETECTED;
 			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=ABD_EVENT; 
 			Cl_alarms_alarms[ABD_EVENT].cl_detected_count++;
@@ -223,12 +358,21 @@ Cl_ReturnCodes Cl_alarms_scanforAlarms(void)
 			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 			Cl_UpdateMacAlarmEventTable();
 		}
+		else
+		{
+			Cl_alarms_alarms[ABD_EVENT].cl_alarmstate = CL_ALARM_INACTIVE;
+		}
 	
 	}
 	if(Cl_alarms_alarms[BD_EVENT].cl_is_enabled)
 	{
+		
 		if(cl_sys_statbuffer.bdstatus)
 		{
+			//uint16_t temp_bd;
+			//temp_bd=cl_sys_statbuffer.bdstatus;
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"BD=",3);
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_bd,2);
 			Cl_alarms_alarms[BD_EVENT].cl_alarmstate = CL_ALARM_DETECTED;
 			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=BD_EVENT; 
 			Cl_alarms_alarms[BD_EVENT].cl_detected_count++;
@@ -236,7 +380,10 @@ Cl_ReturnCodes Cl_alarms_scanforAlarms(void)
 			cl_lastalarmid = BD_EVENT;
 			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 			Cl_UpdateMacAlarmEventTable();
-			
+		}
+		else
+		{
+			Cl_alarms_alarms[BD_EVENT].cl_alarmstate = CL_ALARM_INACTIVE;
 		}
 	}
 	if(Cl_alarms_alarms[BLD_EVENT].cl_is_enabled)
@@ -250,13 +397,25 @@ Cl_ReturnCodes Cl_alarms_scanforAlarms(void)
 					cl_lastalarmid = BLD_EVENT;
 					Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 					Cl_UpdateMacAlarmEventTable();
+				}
+				else
+				{
+
+					Cl_alarms_alarms[BLD_EVENT].cl_alarmstate = CL_ALARM_INACTIVE;
 					
 				}
 	}
 	if(Cl_alarms_alarms[APTSTATUS_HIGH].cl_is_enabled)
 	{
+		
 				if(apt > Cl_alarmThresholdTable.apt_high_threshold)
 				{
+					//uint16_t temp_ps;
+					//temp_ps=apt;
+
+					//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"APT",4);
+					//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
+					//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_bd,2);
 					Cl_alarms_alarms[APTSTATUS_HIGH].cl_alarmstate = CL_ALARM_DETECTED;
 					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=APTSTATUS_HIGH; 
 					Cl_alarms_alarms[APTSTATUS_HIGH].cl_detected_count++;
@@ -266,11 +425,42 @@ Cl_ReturnCodes Cl_alarms_scanforAlarms(void)
 					Cl_UpdateMacAlarmEventTable();
 					
 				}
+				else if (Cl_alarms_alarms[APTSTATUS_HIGH].cl_alarmstate == CL_ALARM_DETECTED)
+				{
+					Cl_alarms_alarms[APTSTATUS_HIGH].cl_alarmstate = CL_ALARM_INACTIVE;
+				}
+	}
+	if(Cl_alarms_alarms[APTSTATUS_LOW].cl_is_enabled)
+	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT_LOW",11);
+		if(apt < Cl_alarmThresholdTable.apt_low_threshold)
+		{
+			//uint16_t temp_ps;
+			//temp_ps=apt;
+			Cl_alarms_alarms[APTSTATUS_LOW].cl_alarmstate = CL_ALARM_DETECTED;
+			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=APTSTATUS_LOW;
+			Cl_alarms_alarms[APTSTATUS_LOW].cl_detected_count++;
+			cl_alarm_triggered = true;
+			cl_lastalarmid = APTSTATUS_LOW;
+			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
+			Cl_UpdateMacAlarmEventTable();
+			
+		}
+		else if (Cl_alarms_alarms[APTSTATUS_LOW].cl_alarmstate == CL_ALARM_DETECTED)
+		{
+			Cl_alarms_alarms[APTSTATUS_LOW].cl_alarmstate = CL_ALARM_INACTIVE;
+		}
 	}
 	if(Cl_alarms_alarms[VPTSTATUS_HIGH].cl_is_enabled)
 	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"VPTHIGH",7);
 				if(vpt > Cl_alarmThresholdTable.vpt_high_threshold)
 				{
+					//uint16_t temp_ps;
+					//temp_ps=vpt;
+
+					//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"VPT",4);
+				//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 						Cl_alarms_alarms[VPTSTATUS_HIGH].cl_alarmstate = CL_ALARM_DETECTED;
 						Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=VPTSTATUS_HIGH; 
 						Cl_alarms_alarms[VPTSTATUS_HIGH].cl_detected_count++;
@@ -280,10 +470,15 @@ Cl_ReturnCodes Cl_alarms_scanforAlarms(void)
 						Cl_UpdateMacAlarmEventTable();
 					
 				}
+				else if (Cl_alarms_alarms[VPTSTATUS_HIGH].cl_alarmstate == CL_ALARM_DETECTED)
+				{
+					Cl_alarms_alarms[VPTSTATUS_HIGH].cl_alarmstate = CL_ALARM_INACTIVE;
+				}
 	}
 
 	if(Cl_alarms_alarms[VPTSTATUS_LOW].cl_is_enabled)
 	{
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"VPTLOW",6);
 		if(vpt < Cl_alarmThresholdTable.vpt_low_threshold)
 		{
 			Cl_alarms_alarms[VPTSTATUS_LOW].cl_alarmstate = CL_ALARM_DETECTED;
@@ -295,11 +490,16 @@ Cl_ReturnCodes Cl_alarms_scanforAlarms(void)
 			Cl_UpdateMacAlarmEventTable();
 			
 		}
+		else if (Cl_alarms_alarms[VPTSTATUS_LOW].cl_alarmstate == CL_ALARM_DETECTED)
+		{
+			Cl_alarms_alarms[VPTSTATUS_LOW].cl_alarmstate = CL_ALARM_INACTIVE;
+		}
 	}
+	
 
 	if(Cl_alarms_alarms[BLOODDOOR_STATUS_OPEN].cl_is_enabled)
 	{
-		
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DOOR",6);
 		
 				if(((Cl_alarms_alarms[BLOODDOOR_STATUS_OPEN].cl_triggertype == LOGIC_HIGH) && (cl_sys_statbuffer.bloodpumpdoor )) || ((Cl_alarms_alarms[BLOODDOOR_STATUS_OPEN].cl_triggertype == LOGIC_LOW) && (!cl_sys_statbuffer.bloodpumpdoor )) )
 				{
@@ -611,10 +811,16 @@ if(Cl_alarms_alarms[HOLDER2STATUS_OPEN].cl_is_enabled)
 	
 	if(Cl_alarms_alarms[PS1_HIGH_THRESHOLD].cl_is_enabled)
 	{
+		
 		if (Cl_alarms_alarms[PS1_HIGH_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 		{
 				if(ps1 > Cl_alarmThresholdTable.ps1_high_threshold)
 				{
+					//uint16_t temp_ps;
+					//temp_ps=ps1;
+
+					//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS1=",4);
+					//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 					Cl_alarms_alarms[PS1_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;	
 					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS1_HIGH_THRESHOLD;
 					Cl_alarms_alarms[PS1_HIGH_THRESHOLD].cl_detected_count++;
@@ -623,19 +829,26 @@ if(Cl_alarms_alarms[HOLDER2STATUS_OPEN].cl_is_enabled)
 					Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 					Cl_UpdateMacAlarmEventTable();
 				}
-				else
-				{
-					
-				}
+				
+		}
+		else if (Cl_alarms_alarms[PS1_HIGH_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED) 
+		{
+			Cl_alarms_alarms[PS1_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
 		}
 	}
 
 if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 {
+	 
 	if (Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 	{
 		if(ps1 < Cl_alarmThresholdTable.ps1_low_threshold)
 		{
+			//uint16_t temp_ps;
+			//temp_ps=ps1;
+
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS1=",4);
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 			Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
 			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS1_LOW_THRESHOLD;
 			Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_detected_count++;
@@ -644,23 +857,25 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 			Cl_UpdateMacAlarmEventTable();
 		}
-		else
-		{
-			
-		}
+	}
+	else if (Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED)
+	{
+		Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
 	}
 }
+
 	if(Cl_alarms_alarms[PS2_HIGH_THRESHOLD].cl_is_enabled)
 	{
+		
 				if (Cl_alarms_alarms[PS2_HIGH_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
-		{
+				{
 				if(ps2 > Cl_alarmThresholdTable.ps2_high_threshold)
 				{
-						uint16_t temp_ps;
-						temp_ps=ps2;
+						//uint16_t temp_ps;
+						//temp_ps=ps2;
 
-							 Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS2=",4);
-							 Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
+							// Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS2=",4);
+							// Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 												
 					Cl_alarms_alarms[PS2_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;	
 					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS2_HIGH_THRESHOLD;
@@ -671,14 +886,24 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 					Cl_UpdateMacAlarmEventTable();
 					
 				}
-		}
+				}
+				else if (Cl_alarms_alarms[PS2_HIGH_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED)
+				{
+					Cl_alarms_alarms[PS2_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
+				}
 	}
 		if(Cl_alarms_alarms[PS2_LOW_THRESHOLD].cl_is_enabled)
 		{
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT",6);
 			if (Cl_alarms_alarms[PS2_LOW_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 			{
 				if(ps2 < Cl_alarmThresholdTable.ps2_low_threshold)
 				{
+					//uint16_t temp_ps;
+					//temp_ps=ps2;
+
+					//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS2=",4);
+					//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 					Cl_alarms_alarms[PS2_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
 					Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS2_LOW_THRESHOLD;
 					Cl_alarms_alarms[PS2_LOW_THRESHOLD].cl_detected_count++;
@@ -689,24 +914,35 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 					
 				}
 			}
+			else if (Cl_alarms_alarms[PS2_LOW_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED)
+			{
+				Cl_alarms_alarms[PS2_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
+			}
 		}
 		
 
 	if(Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_is_enabled)
 		{
+			// Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT_HIGH",11);
 			//	if((cl_sys_statbuffer.ps3status > 1474) && (Cl_alarms_alarms[PS3STATUS_HIGH].cl_alarmstate != CL_ALARM_DETECTED)) // eqvt to 0.8 bar
 				if((ps3 > Cl_alarmThresholdTable.ps3_high_threshold ) && (Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)) // eqvt to 0.8 bar
 				{
+					//uint16_t temp_ps;
+					//temp_ps=ps3;
+
+					//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS3=",4);
+					//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 				Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
 				Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS3_HIGH_THRESHOLD;
 				Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_detected_count++;
 				cl_alarm_triggered = true;
 				cl_lastalarmid = PS3_HIGH_THRESHOLD;
-				Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALERT_TRIGGERED ;
+				//Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALERT_TRIGGERED ;
+				Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 				Cl_UpdateMacAlarmEventTable();
 				}
 				
-				else if ((Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED) && (cl_sys_statbuffer.ps3status < Cl_alarmThresholdTable.ps3_high_threshold - 200  ))
+				else if (Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED)
 				{
 					Cl_alarms_alarms[PS3_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
 				}
@@ -714,19 +950,41 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 	
 	if(Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_is_enabled)
 	{
+		
 		//	if((cl_sys_statbuffer.ps3status > 1474) && (Cl_alarms_alarms[PS3STATUS_HIGH].cl_alarmstate != CL_ALARM_DETECTED)) // eqvt to 0.8 bar
+		
+		float temp,temp_ps;
+		//temp = 
+		
 		if((ps3 < Cl_alarmThresholdTable.ps3_low_threshold ) && (Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)) // eqvt to 0.8 bar
 		{
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"PS3=",4);
+			
+			if(ps3 < 0)
+			{
+				ps3 = ps3+1000;
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTNDATA,&ps3,2);
+			}
+			else
+			{
+				//uint16_t temp =0,temp1=0;
+				//temp = ps3;
+				//temp1= Cl_alarmThresholdTable.ps3_low_threshold;
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp1,2);
+			}
+			
 			Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
 			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=PS3_LOW_THRESHOLD;
 			Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_detected_count++;
 			cl_alarm_triggered = true;
 			cl_lastalarmid = PS3_LOW_THRESHOLD;
-			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALERT_TRIGGERED ;
+			//Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALERT_TRIGGERED ;
+			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 			Cl_UpdateMacAlarmEventTable();
 		}
 		
-		else if ((Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED) && (cl_sys_statbuffer.ps3status < Cl_alarmThresholdTable.ps3_low_threshold - 200 ))
+		else if (Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED)
 		{
 			Cl_alarms_alarms[PS3_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
 		}
@@ -735,6 +993,7 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 	
 	if(Cl_alarms_alarms[TEMP1_HIGH_THRESHOLD].cl_is_enabled)
 	{
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT_HIGH",11);
 			//	int16_t temp1,temp2;
 			//	temp1 = (0.805 * cl_sys_statbuffer.Temp1status) - 1004 ;
 			//	temp2 = 3000 + (temp1 * 1000)/382;
@@ -742,16 +1001,29 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 			//if(cl_sys_statbuffer.Temp1status > 4096)
 			if(temp1 > Cl_alarmThresholdTable.temp1_high_threshold)
 			{
+				//uint16_t temp_ps;
+				//temp_ps=temp1;
 
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"T1=",3);
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 				Cl_alarms_alarms[TEMP1_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
 				Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP1_HIGH_THRESHOLD;
 				Cl_alarms_alarms[TEMP1_HIGH_THRESHOLD].cl_detected_count++;
 				cl_alarm_triggered = true;
 				cl_lastalarmid = TEMP1_HIGH_THRESHOLD;
 				Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
-				Cl_UpdateMacAlarmEventTable();
-						
+				Cl_UpdateMacAlarmEventTable();		
 			}
+			else
+			{
+				if(Cl_alarms_alarms[TEMP1_HIGH_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED)
+				{
+					Cl_alarms_alarms[TEMP1_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
+					Cl_alarms_alarms[TEMP1_HIGH_THRESHOLD].cl_detected_count = 0;
+					cl_alarm_triggered = false;
+				}
+			}
+			
 	}
 	
 	
@@ -760,11 +1032,22 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 			//	int16_t temp1,temp2;
 			//	temp1 = (0.805 * cl_sys_statbuffer.Temp1status) - 1004 ;
 			//	temp2 = 3000 + (temp1 * 1000)/382;
-
+			//uint16_t temp2;
+			//temp2=Cl_alarmThresholdTable.temp1_low_threshold;
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT_LOW",11);
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp2,2);
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp1,2);
 			//if(cl_sys_statbuffer.Temp1status > 4096)
 			if(temp1 < Cl_alarmThresholdTable.temp1_low_threshold)
 			{
+				
+				//uint16_t temp_ps;
+				//temp_ps=temp1;
 
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"T1=",3);
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
+				if(Cl_alarms_alarms[TEMP1_LOW_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
+				{
 				Cl_alarms_alarms[TEMP1_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
 				Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=TEMP1_LOW_THRESHOLD;
 				Cl_alarms_alarms[TEMP1_LOW_THRESHOLD].cl_detected_count++;
@@ -772,6 +1055,7 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 				cl_lastalarmid = TEMP1_LOW_THRESHOLD;
 				Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
 				Cl_UpdateMacAlarmEventTable();
+				}
 						
 			}
 			else
@@ -788,6 +1072,7 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 	
 	if(Cl_alarms_alarms[TEMP3_HIGH_THRESHOLD].cl_is_enabled)
 		{
+		//	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT_HIGH",11);
 			//	int16_t temp1,temp2;
 			//	temp1 = (0.805 * cl_sys_statbuffer.Temp3status) - 1004 ;
 			//	temp2 = 3000 + (temp1 * 1000)/382;
@@ -795,6 +1080,11 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 		//	if(temp2 > Cl_alarms_alarms[SENSOR_TEMP3STATUS].cl_upper)
 		//	if(cl_sys_statbuffer.Temp3status > 405)
 			{
+			//	uint16_t temp_ps;
+				//temp_ps=temp3;
+
+				///Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"T3=",3);
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 				if(Cl_alarms_alarms[TEMP3_HIGH_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 				{
 					Cl_alarms_alarms[TEMP3_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
@@ -821,10 +1111,15 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 				}
 	if(Cl_alarms_alarms[TEMP3_LOW_THRESHOLD].cl_is_enabled)
 	{
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT_LOW",11);
 			 if (temp3 < Cl_alarmThresholdTable.temp3_low_threshold)
 		//	else if (cl_sys_statbuffer.Temp3status < 395)
 				{
-			
+				//uint16_t temp_ps;
+				//temp_ps=temp3;
+
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"T3=",3);
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 							if(Cl_alarms_alarms[TEMP3_LOW_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 							{
 								Cl_alarms_alarms[TEMP3_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
@@ -856,7 +1151,7 @@ if(Cl_alarms_alarms[PS1_LOW_THRESHOLD].cl_is_enabled)
 
 if(Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_is_enabled)
 {
-	
+	//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT_HIGH",11);
 	//		int16_t temp1,temp2;
 	//		temp1 = (0.805 * cl_sys_statbuffer.Temp2status) - 1004 ;
 	//		temp2 = 3000 + (temp1 * 1000)/382;
@@ -864,7 +1159,11 @@ if(Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_is_enabled)
 
 //	if(cl_sys_statbuffer.Temp2status > 840)
 	{
-	
+	//uint16_t temp_ps;
+	//temp_ps=temp2;
+
+	//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"T2=",3);
+	//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 		if(Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 		{
 			Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_alarmstate = CL_ALARM_DETECTED;
@@ -896,10 +1195,14 @@ if(Cl_alarms_alarms[TEMP2_HIGH_THRESHOLD].cl_is_enabled)
 }
 if(Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_is_enabled)
 {
-	
+	//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT_LOW",11);
 	 if (temp2 < Cl_alarmThresholdTable.temp2_low_threshold)
 		{
-			
+			//uint16_t temp_ps;
+			//temp_ps=temp2;
+
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"T2=",3);
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
 		
 		if(Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_alarmstate != CL_ALARM_DETECTED)
 		{
@@ -914,9 +1217,87 @@ if(Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_is_enabled)
 			
 		}
 		}
-
-	
+	else
+	//	else if (cl_sys_statbuffer.Temp3status > 400)
+	{
+		if(Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_alarmstate == CL_ALARM_DETECTED)
+		{
+			Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_alarmstate = CL_ALARM_INACTIVE;
+			Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_detected_count = 0;
+			cl_alarm_triggered = false;
+		}
+	}
 }
+	if(Cl_alarms_alarms[COND_STATUS_HIGH].cl_is_enabled)
+	{
+		//int16_t cond,cond1;
+		//cond = Cl_alarmThresholdTable.cond_high_threshold;
+	//	cond1 = cond_final;
+
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&cond,2);
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&cond1,2);
+		if(cond_final > Cl_alarmThresholdTable.cond_high_threshold)
+		{
+			///uint16_t temp_ps;
+			//temp_ps=cond_final;
+
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"CS=",3);
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
+			Cl_alarms_alarms[COND_STATUS_HIGH].cl_alarmstate = CL_ALARM_DETECTED;
+			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=COND_STATUS_HIGH;
+			Cl_alarms_alarms[COND_STATUS_HIGH].cl_detected_count++;
+			cl_alarm_triggered = true;
+			cl_lastalarmid = COND_STATUS_HIGH;
+			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
+			Cl_UpdateMacAlarmEventTable();
+		}
+		else
+		{
+			if(Cl_alarms_alarms[COND_STATUS_HIGH].cl_alarmstate == CL_ALARM_DETECTED)
+			{
+				Cl_alarms_alarms[COND_STATUS_HIGH].cl_alarmstate = CL_ALARM_INACTIVE;
+				Cl_alarms_alarms[COND_STATUS_HIGH].cl_detected_count = 0;
+				cl_alarm_triggered = false;
+			}
+		} 
+		
+	}
+	
+	if(Cl_alarms_alarms[COND_STATUS_LOW].cl_is_enabled)
+	{
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT_LOW",11);
+		//uint16_t cond,cond1;
+		//cond = Cl_alarmThresholdTable.cond_low_threshold;
+		//cond1 = cond_final;
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&cond,2);
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&cond1,2);
+		if(cond_final < Cl_alarmThresholdTable.cond_low_threshold)
+		{
+			//uint16_t temp_ps;
+			//temp_ps=cond_final;
+
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"CS=",3);
+			//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_ps,2);
+			Cl_alarms_alarms[COND_STATUS_LOW].cl_alarmstate = CL_ALARM_DETECTED;
+			Cl_MacEvent1.Cl_MacEventData[Cl_MacEvent1.Cl_MacNewEventcount][0]=COND_STATUS_LOW;
+			Cl_alarms_alarms[COND_STATUS_LOW].cl_detected_count++;
+			cl_alarm_triggered = true;
+			cl_lastalarmid = COND_STATUS_LOW;
+			Cl_MacEvent1.Cl_MacEvent[Cl_MacEvent1.Cl_MacNewEventcount] = EVT_ALARM_TRIGGERED ;
+			Cl_UpdateMacAlarmEventTable();
+			
+		}
+		else
+		{
+			if(Cl_alarms_alarms[COND_STATUS_LOW].cl_alarmstate == CL_ALARM_DETECTED)
+			{
+				Cl_alarms_alarms[COND_STATUS_LOW].cl_alarmstate = CL_ALARM_INACTIVE;
+				Cl_alarms_alarms[COND_STATUS_LOW].cl_detected_count = 0;
+				cl_alarm_triggered = false;
+			}
+		}
+	}
+	
 			
 	if((Cl_alarms_alarms[COND_DAC_OPEN].cl_is_enabled) || (Cl_alarms_alarms[COND_DAC_RO].cl_is_enabled) || (Cl_alarms_alarms[COND_DAC_HIGH].cl_is_enabled) )
 	{
@@ -962,8 +1343,9 @@ if(Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_is_enabled)
 
 	}
 		
-	if((Cl_alarms_alarms[COND_STATUS_LOW].cl_is_enabled) || (Cl_alarms_alarms[COND_STATUS_HIGH].cl_is_enabled))
+	/*if((Cl_alarms_alarms[COND_STATUS_LOW].cl_is_enabled) || (Cl_alarms_alarms[COND_STATUS_HIGH].cl_is_enabled))
 	{
+		Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT",11);
 		cond_alarm = _NO_ALARM;
 		cl_get_conductivity_info(&cond_alarm);
 		switch(cond_alarm)
@@ -971,6 +1353,7 @@ if(Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_is_enabled)
 			case COND_STATUS_LOW:
 			if(Cl_alarms_alarms[COND_STATUS_LOW].cl_is_enabled)
 			{
+				Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT_LOW",11);
 							if(Cl_alarms_alarms[COND_STATUS_LOW].cl_alarmstate != CL_ALARM_DETECTED)
 							{
 								Cl_alarms_alarms[cond_alarm].cl_alarmstate = CL_ALARM_DETECTED;
@@ -988,6 +1371,7 @@ if(Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_is_enabled)
 			case COND_STATUS_HIGH:
 			if(Cl_alarms_alarms[COND_STATUS_HIGH].cl_is_enabled)
 			{
+				Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DETECT_HIGH",11);
 							if(Cl_alarms_alarms[COND_STATUS_HIGH].cl_alarmstate != CL_ALARM_DETECTED)
 							{
 								Cl_alarms_alarms[cond_alarm].cl_alarmstate = CL_ALARM_DETECTED;
@@ -1004,7 +1388,7 @@ if(Cl_alarms_alarms[TEMP2_LOW_THRESHOLD].cl_is_enabled)
 			default:break;
 			
 		}
-	}	
+	}	*/
 
 
 if (  gflow_en)//testing

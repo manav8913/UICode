@@ -248,13 +248,13 @@
         <JlinkConfigFile>G:\Renalyx_Working\Renalyx_DM1\jlink.config</JlinkConfigFile>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.samice</ToolType>
-      <ToolNumber>28017840</ToolNumber>
+      <ToolNumber>28014956</ToolNumber>
       <ToolName>SAM-ICE</ToolName>
     </com_atmel_avrdbg_tool_samice>
     <avrtoolinterface>JTAG</avrtoolinterface>
     <preserveEEPROM>true</preserveEEPROM>
     <ExternalProgrammingToolCommand />
-    <avrtoolserialnumber>28017840</avrtoolserialnumber>
+    <avrtoolserialnumber>28014956</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0x285E0A60</avrdeviceexpectedsignature>
     <avrtoolinterfaceclock>4000000</avrtoolinterfaceclock>
     <PercepioTrace>

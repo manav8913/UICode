@@ -132,7 +132,7 @@ if (FUNC_ENTRY == 1)
 		//	pinclock(); 
 		Cl_TimerRetValue = Cl_Timer_Create_Tick20Ms_Event();
 			
-		cl_hep_pump_enddetction_timer();
+	
 		//Cl_tg_prick_100ms();
 		
 
@@ -183,7 +183,7 @@ if (FUNC_ENTRY == 1)
 			Cl_ms100ticks++;
 			Cl_TimerRetValue = Cl_Timer_Create_Tick100Ms_Event();
 
-			
+				cl_hep_pump_enddetction_timer();
 
 
 		}

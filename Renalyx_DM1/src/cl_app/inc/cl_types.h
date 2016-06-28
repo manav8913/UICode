@@ -107,6 +107,8 @@ typedef struct{
 
 	bool holder1status;
 	bool holder2status;
+	bool acid_in;
+	bool bicarb_in;
 	uint8_t calibration;
 	uint8_t acid_inlet_status;
 	uint8_t bicarb_inlet_status;

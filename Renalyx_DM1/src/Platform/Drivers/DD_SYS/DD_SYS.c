@@ -531,7 +531,96 @@ uint8_t DD_RESET_DIR()   // Heparin Direction
 	
 	return 0;
 }
-
+uint8_t DD_SET_RED()               // RED
+{
+	uint32_t p_io, peri;
+	
+	p_io=1;
+	peri = PC;
+	
+	
+	DD_RESET_PIO(peri,p_io);
+	
+	return 0;
+}
+uint8_t DD_SET_GREEN()               // GREEN
+{
+	uint32_t p_io, peri;
+	
+	p_io=26;
+	peri = PB;
+	
+	DD_RESET_PIO(peri,p_io);
+	
+	return 0;
+}
+uint8_t DD_SET_YELLOW()               // YELLOW
+{
+	uint32_t p_io, peri;
+	
+	p_io=10;
+	peri = PD;
+	
+	DD_RESET_PIO(peri,p_io);
+	
+	return 0;
+}
+uint8_t DD_SET_BUZZER()               // BUZZZER
+{
+	uint32_t p_io, peri;
+	
+	p_io=14;
+	peri = PA;
+	
+	DD_RESET_PIO(peri,p_io);
+	
+	return 0;
+}
+uint8_t DD_RESET_RED()               // RED
+{
+	uint32_t p_io, peri;
+	
+	p_io=1;
+	peri = PC;
+	
+	
+	DD_SET_PIO(peri,p_io);
+	
+	return 0;
+}
+uint8_t DD_RESET_GREEN()               // GREEN
+{
+	uint32_t p_io, peri;
+	
+	p_io=26;
+	peri = PB;
+	
+	DD_SET_PIO(peri,p_io);
+	
+	return 0;
+}
+uint8_t DD_RESET_YELLOW()               // YELLOW
+{
+	uint32_t p_io, peri;
+	
+	p_io=10;
+	peri = PD;
+	
+	DD_SET_PIO(peri,p_io);
+	
+	return 0;
+}
+uint8_t DD_RESET_BUZZER()               // BUZZZER
+{
+	uint32_t p_io, peri;
+	
+	p_io=14;
+	peri = PA;
+	
+	DD_SET_PIO(peri,p_io);
+	
+	return 0;
+}
 uint8_t DD_SET_VALVE(sv_valvetype id_valve)
 {
 	uint32_t p_io, peri;
@@ -1110,8 +1199,8 @@ uint8_t DD_RD_SENSIN(sv_sensintype id_sensein)
 		break;
 		
 		case SV_SENSIN_ID8:					//ABD
-		p_io = 7;
-		peri = PA;
+		p_io = 5;
+		peri = PD;
 		break;
 		
 		case SV_SENSIN_ID9:					// holder sense1
@@ -1158,12 +1247,12 @@ uint8_t DD_RD_SENSIN(sv_sensintype id_sensein)
 		p_io =20;
 		peri =PA;
 		break;
-		case SV_SENSIN_ID20:
-		p_io =21;
+		case SV_SENSIN_ID20:  // acid in
+		p_io =17;
 		peri =PC;
 		
 		break;
-		case SV_SENSIN_ID21:
+		case SV_SENSIN_ID21:				// bicarb in
 		p_io =21;
 		peri =PB;
 		break;
@@ -1187,6 +1276,7 @@ uint8_t DD_RD_SENSIN(sv_sensintype id_sensein)
 			p_io =1;
 			peri =PA;
 		break;
+		
 		default:
 		break;
 	}
@@ -1352,6 +1442,17 @@ uint8_t DD_SET_FLOW_PATH(sv_flowpathtype sv_flowpath)
 	
 	switch(sv_flowpath)
 	{
+			
+		case FLOW_PATH_BC_ALARM:
+			DD_RESET_VALVE (VALVE_ID5);
+			DD_RESET_VALVE (VALVE_ID6);
+			DD_RESET_VALVE (VALVE_ID7);
+			DD_RESET_VALVE (VALVE_ID8);
+			DD_RESET_VALVE (VALVE_ID9);
+			DD_RESET_VALVE (VALVE_ID10);
+			DD_RESET_VALVE (VALVE_ID11);
+			DD_RESET_VALVE (VALVE_ID12);
+		break;
 				
 		case FLOW_PATH_IDLE_RINSE:
 	

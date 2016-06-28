@@ -166,7 +166,8 @@ uint16_t sv_status_getsystemstatus(Sys_statusType* sensor_struct)
 	sensor_struct->Heparin_full_marker  = sensor_struct1.Heparin_full_marker;
 	sensor_struct->Heparin_empty_marker = sensor_struct1.Heparin_empty_marker;
 	sensor_struct->Heparin_rotation_marker = sensor_struct1.Heparin_rotation_marker;
-	
+	sensor_struct->acid_inlet_status = sensor_struct1.acid_inlet_status;
+	sensor_struct->bicarb_inlet_status = sensor_struct1.bicarb_inlet_status;
 	
 	return 0;
 

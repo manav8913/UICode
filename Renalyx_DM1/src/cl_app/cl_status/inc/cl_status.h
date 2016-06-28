@@ -10,6 +10,8 @@
 #define CL_STATUS_H_
 
 #include "cl_app/inc/cl_types.h"
+#ifndef DATASTREAMTYPE
+#define DATASTREAMTYPE
 typedef union{
 	
 	uint8_t bytearray[4] ;
@@ -18,5 +20,5 @@ typedef union{
 	
 }cl_Datastreamtype;
 
-
+#endif
 #endif /* CL_STATUS_H_ */

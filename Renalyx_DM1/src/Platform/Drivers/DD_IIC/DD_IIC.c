@@ -32,7 +32,12 @@
 #ifndef BLOODPUMP_IIC_ADR
 #define BLOODPUMP_IIC_ADR 0x0E
 #endif
-
+typedef union{
+	
+	uint8_t byte[2];
+	uint16_t Twobyte;
+	uint32_t fourbyte;
+}testtype;
 extern uint32_t twi_master_write(Twi *p_twi, twi_packet_t *p_packet);
 extern void DD_SET_POT(uint8_t iic_address, uint16_t data);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
@@ -296,9 +301,7 @@ uint32_t twi_master_read1(Twi *p_twi, twi_packet_t *p_packet)
 	p_twi->TWI_CR = TWI_CR_START;
 	
 			/* Last byte ? */
-		if (cnt == 1) {
-			p_twi->TWI_CR = TWI_CR_STOP;
-		}
+
 
 	while (cnt > 0) {
 		status = p_twi->TWI_SR;
@@ -307,13 +310,12 @@ uint32_t twi_master_read1(Twi *p_twi, twi_packet_t *p_packet)
 			return TWI_RECEIVE_NACK;
 		}
 		
-		#if 0
-
+		
 		/* Last byte ? */
 		if (cnt == 1) {
 			p_twi->TWI_CR = TWI_CR_STOP;
 		}
-#endif
+
 		if (!(status & TWI_SR_RXRDY)) {
 			
 			if(func_timer > 3)
@@ -816,12 +818,13 @@ void DD_IIC_SET_POT(uint8_t iic_address, uint16_t data)
 
 }
 
-void DD_IIC_SET_BLOODPUP(uint8_t iic_address, uint8_t* data,uint8_t length)
+void DD_IIC_SET_BLOODPUP(uint8_t iic_address, uint32_t data,uint8_t length)
 {
 	//DD_WRITE_IIC( iic_address,  *data , sizeof(uint16_t));
-		uint8_t temp,temp1,retries=0;
-		uint8_t counter1, counter;
-	
+		uint32_t temp,temp1,retries=0;
+		uint8_t counter1, counter,temp8;
+		uint32_t bp_data;
+	testtype test1, test2;
 	
 
 	twi_packet_t iic_packet = {
@@ -830,14 +833,41 @@ void DD_IIC_SET_BLOODPUP(uint8_t iic_address, uint8_t* data,uint8_t length)
 		.length       = length   // transfer data size (bytes)
 	};
 
-
+	test1.fourbyte = 0;
+	test1.fourbyte = data;
+	temp8 = test1.byte[0];
+	test2.byte[0] = test1.byte[1];
+	test2.byte[1] = test1.byte[2];
 	
+	
+	iic_packet.buffer = (void *)&test1.fourbyte;
 
+	bp_data =  data;
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"$$$$",4);
+	//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp8,1);
+	//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&test2.Twobyte,2);
+	
+	//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&BP_Command_Queue[0].pending,1);
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"****",4);
+		uint16_t temp_16;
+		temp_16=BP_Command_Queue[0].command;
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_16,2);
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&BP_Command_Queue[0].pending,1);
+			temp_16=BP_Command_Queue[1].command;
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_16,2);
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&BP_Command_Queue[1].pending,1);
+			temp_16=BP_Command_Queue[2].command;
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_16,2);
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&BP_Command_Queue[2].pending,1);
+			temp_16=BP_Command_Queue[3].command;
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_16,2);
+		//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&BP_Command_Queue[3].pending,1);
+		
 		for ( counter =0;counter < BP_IIC_MAX;counter++)
 		{
 			if( BP_Command_Queue[counter].pending == false)
 			{
-				BP_Command_Queue[counter].command = *data;
+				BP_Command_Queue[counter].command = bp_data;
 				BP_Command_Queue[counter].len = length;
 				BP_Command_Queue[counter].pending = true;
 				break;
@@ -852,12 +882,16 @@ void DD_IIC_SET_BLOODPUP(uint8_t iic_address, uint8_t* data,uint8_t length)
 		{
 			if( BP_Command_Queue[counter].pending == true)
 			{
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"AAA",3);
 				iic_packet.buffer =  (void *)&BP_Command_Queue[counter].command;
 				iic_packet.length = BP_Command_Queue[counter].len;
 				temp = BP_Command_Queue[counter].command;
+				uint16_t temp_16;
+				temp_16=temp;
+				//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_16,4);
 				twi_master_write1(TWI_EXAMPLE, &iic_packet)	;
 				bp_write_count++;
-				temp1 = 255;
+				temp1 = 0xf0;
 				iic_packet.buffer = &temp1;
 				//iic_packet.buffer =  (void *)&temp;
 				twi_master_read1(TWI_EXAMPLE,&iic_packet);
@@ -877,10 +911,13 @@ void DD_IIC_SET_BLOODPUP(uint8_t iic_address, uint8_t* data,uint8_t length)
 					break;
 					
 				}
+
 				
 			}
+							
 			
 		}
+
 		for ( counter =0;counter < BP_IIC_MAX;counter++)
 		{
 			if( BP_Command_Queue[counter].pending == true)
@@ -912,7 +949,20 @@ void DD_IIC_SET_BLOODPUP(uint8_t iic_address, uint8_t* data,uint8_t length)
 			}
 		}
 
-		
+					/*	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"HHHH",4);
+						//uint16_t temp_16;
+						temp_16=BP_Command_Queue[0].command;
+						Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_16,2);
+						Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&BP_Command_Queue[0].pending,1);
+						temp_16=BP_Command_Queue[1].command;
+						Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_16,2);
+						Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&BP_Command_Queue[1].pending,1);
+						temp_16=BP_Command_Queue[2].command;
+						Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_16,2);
+						Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&BP_Command_Queue[2].pending,1);
+						temp_16=BP_Command_Queue[3].command;
+						Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp_16,2);
+						Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&BP_Command_Queue[3].pending,1);*/
 	
 
 }
@@ -941,7 +991,7 @@ void DD_RETRY_IIC(void)
 					.buffer       = (void *)0, // transfer data source buffer
 					.length       = 0   // transfer data size (bytes)
 				};
-
+//return;
 		
 			for ( counter =0;counter < BP_IIC_MAX;counter++)
 			{

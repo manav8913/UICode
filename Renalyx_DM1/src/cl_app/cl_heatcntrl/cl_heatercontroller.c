@@ -44,8 +44,8 @@ typedef struct
 
 Cl_ReturnCodes cl_heater_heat(void);
 
-
-static HeaterStateType HeaterState = CL_HEATER_STATE_INACTIVE, HeaterPrevState = CL_HEATER_STATE_INACTIVE;
+extern HeaterStateType HeaterStateDummy;
+ HeaterStateType HeaterState = CL_HEATER_STATE_INACTIVE, HeaterPrevState = CL_HEATER_STATE_INACTIVE;
 float dummy1,dummy2,dummy3,dummy4,dummy5,dummy6,dummy7;
 float temp_n,long_avg_duty = 0;
 

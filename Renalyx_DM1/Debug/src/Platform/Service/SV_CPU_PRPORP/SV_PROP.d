@@ -138,7 +138,8 @@ src/Platform/Service/SV_CPU_PRPORP/SV_PROP.d \
  ../src/ASF/common/services/twi/sam_twi/twi_master.h \
  ../src/ASF/common/services/twi/twi_slave.h \
  ../src/ASF/common/services/twi/sam_twi/twi_slave.h \
- ../src/ASF/sam/drivers/pio/pio_handler.h ../src/cl_app/inc/cl_types.h
+ ../src/ASF/sam/drivers/pio/pio_handler.h ../src/cl_app/inc/cl_types.h \
+ ../src/cl_app/cl_console/inc/cl_consolecontroller.h
 
 ../src/asf.h:
 
@@ -435,3 +436,5 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/ASF/sam/drivers/pio/pio_handler.h:
 
 ../src/cl_app/inc/cl_types.h:
+
+../src/cl_app/cl_console/inc/cl_consolecontroller.h:

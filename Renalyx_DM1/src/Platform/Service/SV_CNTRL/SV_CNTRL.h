@@ -38,7 +38,14 @@ uint8_t sv_cntrl_enable_bypass(void);
 uint8_t sv_cntrl_disable_bypass(void);
 uint8_t sv_cntrl_enable_loopback(void);
 uint8_t sv_cntrl_disable_loopback(void);
-
+uint8_t sv_cntrl_setredalarm(void);
+uint8_t sv_cntrl_setyellowalarm(void);
+uint8_t sv_cntrl_setgreenalarm(void);
+uint8_t sv_cntrl_buzzer(void);
+uint8_t sv_cntrl_resetredalarm(void);
+uint8_t sv_cntrl_resetyellowalarm(void);
+uint8_t sv_cntrl_resetgreenalarm(void);
+uint8_t sv_cntrl_nobuzzer(void);
 
 
 

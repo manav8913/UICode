@@ -22,7 +22,7 @@ Cl_ReturnCodes cl_dprep_primecontroller(Cl_Dprep_PrimeEvents,int16_t);
 Cl_ReturnCodes Cl_Dprep_primeUpdatePrimeTimeInfo(void);
 Cl_ReturnCodes Cl_Dprep_UpdateDialyserPrimeTimeInfo(void);
 Cl_ReturnCodes cl_dprep_activate_prime_related_alarms(void);
-
+extern Cl_Dprep_PrimeStates cl_dprep_prime_stateDummy;
 
 extern Cl_ReturnCodes        Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 extern uint8_t  sv_cntrl_activatepump(sv_pumptype);
@@ -37,6 +37,11 @@ extern Cl_ReturnCodes Cl_AlarmActivateAlarms(Cl_NewAlarmIdType,bool );
 Cl_ReturnCodes cl_dprep_primecontroller(Cl_Dprep_PrimeEvents prime_event , int16_t data)
 {
 	Cl_ReturnCodes 	 Cl_dprep_primeretcode = CL_ERROR;
+	
+	if(prime_event == CL_DPREP_PRIME_PRIME_TICK_SEC)
+	{
+		cl_dprep_prime_stateDummy = cl_dprep_prime_state;
+	}
 		switch(cl_dprep_prime_state)
 		{
 			case CL_DPREP_PRIME_STATE_IDLE:
@@ -319,13 +324,14 @@ Cl_ReturnCodes cl_dprep_primecontroller(Cl_Dprep_PrimeEvents prime_event , int16
 							case CL_DPREP_PRIME_PRIME_STOP_DIALYSER_PRIMING:
 							case CL_DPREP_PRIME_PRIME_STOP:
 							
-								cl_bp_controller(CL_BP_EVENT_STOP,0);
+								// //lets keep bloodpump running
 								if(data == 1)
 								{
 									Cl_dprep_primeretcode = Cl_SendDatatoconsole(CON_TX_COMMAND_DIALISYS_PRIME_COMPLETED,&data,0);
 									cl_dprep_prime_state = CL_DPREP_PRIME_STATE_DIALYSER_PRIMING_COMPLETED;
 								}else
 								{
+									cl_bp_controller(CL_BP_EVENT_STOP,0);
 									cl_dprep_prime_state = CL_DPREP_PRIME_STATE_DIALYSER_PRIMING_STOPPED;
 								}
 

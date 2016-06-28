@@ -72,9 +72,7 @@ Cl_ReturnCodes cl_event_handler(MAC_EVENTS cl_event)
 		case EVT_TICK_5M:
 				cl_ufpumpFeedback_timer();
 				cl_hep_pumpFeedback_timer();
-				
-
-
+		
 		break;
 		case EVT_TICK_20M:
 		#if 0

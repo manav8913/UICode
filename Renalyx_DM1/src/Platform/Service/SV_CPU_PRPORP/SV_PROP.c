@@ -6,6 +6,8 @@
  */ 
 #include "asf.h"
 #include "cl_app/inc/cl_types.h"
+#include "cl_app/cl_console/inc/cl_consolecontroller.h"
+
 #ifndef CPU_PROP_IIC_ADDR
 #define  CPU_PROP_IIC_ADDR 0x70
 #endif
@@ -14,8 +16,11 @@ extern void DD_IIC_SEND_PROP(uint8_t , uint8_t* );
 extern void DD_IIC_CONSOLE_SEND(uint8_t iic_address, uint8_t* data,uint8_t length);
 extern Cl_ReturnCodes cl_wait(uint32_t ul_dly_ticks);
 extern void DD_IIC_READ_PROP(uint8_t iic_address, uint16_t* data);
+extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 void sv_prop_startmixing();
 void sv_prop_stopmixing();
+void sv_prop_startopenfill();
+void sv_prop_stopopenfill();
 void sv_prop_start_disinfect_intake(void);
 void sv_prop_stop_disinfect_intake(void);
 void sv_prop_set_propro_rc(uint8_t data);
@@ -74,4 +79,14 @@ void sv_prop_stop_disinfect_intake(void)
 
 	}
 	
+}
+void sv_prop_startopenfill()
+{
+	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"OPENFIL",6);
+	DD_IIC_SEND_PROP( CPU_PROP_IIC_ADDR, 5);
+}
+void sv_prop_stopopenfill()
+{
+	Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"STOPFIL",6);
+	DD_IIC_SEND_PROP( CPU_PROP_IIC_ADDR, 6);
 }
