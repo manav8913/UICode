@@ -142,7 +142,7 @@ Cl_ReturnCodes SetHeaterState(HeaterStateType Param_HeaterState)
 		sv_cntrl_poweroffheater();
 	}
 		Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP1STATUS,&temp);
-		initial_temp1 =  0.8056 * temp;
+		initial_temp1 =  0.803 * temp;
 		uint32_t ret_temp;
 		//initial_temp1 = 0.042 * initial_temp1 - 23.68;
 		//y = 0.032x - 6.829
@@ -162,11 +162,11 @@ Cl_ReturnCodes SetHeaterState(HeaterStateType Param_HeaterState)
 		 avg_duty = avg_duty ;
 		 
 		 	Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP1STATUS,&temp);
-		 	prev_temp1val =  0.8056 * temp;
+		 	prev_temp1val =  0.803 * temp;
 		 	Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP2STATUS,&temp);
-		 	prev_temp2val =  0.8056 * temp;
+		 	prev_temp2val =  0.803 * temp;
 		 	Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp);
-		 	prev_temp3val =  0.8056 * temp;
+		 	prev_temp3val =  0.803 * temp;
 		 	
 	if (HeaterState == CL_HEATER_STATE_CLOSED_HEATING)
 	{
@@ -202,11 +202,11 @@ Cl_ReturnCodes UpdateHeaterControls(void)
 	//dummy1 = avg_duty;
 	
 	Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP1STATUS,&temp);
-	Tmp1Val =  0.8056 * temp;
+	Tmp1Val =  0.803 * temp;
 	Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP2STATUS,&temp);
-	Tmp2Val =  0.8056 * temp;
+	Tmp2Val =  0.803 * temp;
 	Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp);
-	Tmp3Val =  0.8056 * temp;
+	Tmp3Val =  0.803 * temp;
 	
 	
 	
@@ -394,8 +394,8 @@ Cl_ReturnCodes UpdateHeaterControls(void)
 					Cl_bc_controller(BC_EVENT_RESUME);
 					sv_cntrl_activatepump(DCMOTOR1);
 					sv_cntrl_activatepump(DCMOTOR2);
-					sv_cntrl_enable_loopback();
-					sv_cntrl_setpumpspeed(DCMOTOR2,1300);
+					//sv_cntrl_enable_loopback();
+					//sv_cntrl_setpumpspeed(DCMOTOR2,1300);
 									
 									
 					
@@ -468,7 +468,7 @@ Cl_ReturnCodes cl_heater_heat(void)
 	static heat_directiontype correction_dir  = NUETRAL;
 	static sec_count = 0;
 	Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP2STATUS,&temp);
-	Tmp2Val1 =  0.8056 * temp;
+	Tmp2Val1 =  0.803 * temp;
 	
 	sec_count++;
 	sec_clock++;

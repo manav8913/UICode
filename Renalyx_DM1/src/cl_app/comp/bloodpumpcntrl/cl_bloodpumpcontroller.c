@@ -16,7 +16,7 @@
 
 cl_bp_states bp_state = CL_BP_STATE_IDLE;
 
-static uint16_t cl_bp_rate = 0;
+static uint32_t cl_bp_rate = 0;
 static uint16_t cl_bp_seconds = 0;
 static uint16_t cl_bp_minutes = 0;
 
@@ -32,12 +32,12 @@ extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,
 extern Cl_ReturnCodes cl_bp_pumpFeedback_set_expected_period(int16_t period);
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 
-Cl_ReturnCodes cl_bp_controller(cl_bp_events bp_event , int16_t data)
+Cl_ReturnCodes cl_bp_controller(cl_bp_events bp_event , uint32_t data)
 {
 	Cl_ReturnCodes cl_bp_retcode = CL_OK;
 	cl_bp_pump_states bp_pumpstate = CL_BP_P_STATE_IDLE;
 	uint16_t bp_delta_value = 0 ;
-	static uint16_t pwm_period = 0;
+	static uint32_t pwm_period = 0;
 	
 	switch(bp_state)
 	{
@@ -46,8 +46,8 @@ Cl_ReturnCodes cl_bp_controller(cl_bp_events bp_event , int16_t data)
 		{
 			case CL_BP_EVENT_SET_BP_RATE:
 			cl_bp_rate = data;
-			pwm_period = 12 * cl_bp_rate ;
-	//		sv_cntrl_setpumpspeed(BLOODPUMP,pwm_period);
+			pwm_period = cl_bp_rate ;
+			sv_cntrl_setpumpspeed(BLOODPUMP,pwm_period);
 			break;
 			case CL_BP_EVENT_START:
 			
@@ -57,6 +57,7 @@ Cl_ReturnCodes cl_bp_controller(cl_bp_events bp_event , int16_t data)
 			
 		//	cl_bp_pumpFeedback_start();
 			bp_state = CL_BP_STATE_STARTED;
+			//bp_state = CL_BP_STATE_IDLE;
 			break;
 			default:break;
 			
@@ -65,6 +66,14 @@ Cl_ReturnCodes cl_bp_controller(cl_bp_events bp_event , int16_t data)
 		case CL_BP_STATE_STARTED:
 		switch (bp_event)
 		{
+			case CL_BP_EVENT_START:
+			
+			cl_bp_retcode =  sv_cntrl_activatepump(BLOODPUMP);
+			cl_bp_retcode = Cl_SendDatatoconsole(CONT_TX_COMMAND_BLOODPUMP_ON,&data,0);
+			bp_state = CL_BP_STATE_STARTED;
+			
+			break;
+			
 			case CL_BP_EVENT_SECOND:
 	//		cl_bp_pumpFeedback_get_state(&bp_pumpstate);
 	//		cl_bp_pumpFeedback_get_delta(&bp_delta_value);
@@ -91,8 +100,8 @@ Cl_ReturnCodes cl_bp_controller(cl_bp_events bp_event , int16_t data)
 			}
 			break;
 			case CL_BP_EVENT_SET_BP_RATE:
-			cl_bp_rate = data;
-	//		sv_cntrl_setpumpspeed(BLOODPUMP,data);
+			sv_cntrl_setpumpspeed(BLOODPUMP,data);
+			bp_state =  CL_BP_STATE_STARTED;
 			break;
 			case CL_BP_EVENT_PAUSE:
 			break;

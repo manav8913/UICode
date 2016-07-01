@@ -13,7 +13,7 @@ extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,
 extern Cl_ReturnCodes cl_hep_pumpFeedback_set_expected_period(int16_t period);
 extern Cl_ReturnCodes cl_hep_pumpFeedback_start(void);
 
-Cl_ReturnCodes cl_hep_controller(cl_hep_events hp_event , int16_t data);
+Cl_ReturnCodes cl_hep_controller(cl_hep_events hp_event , int32_t data);
 
 extern uint8_t  sv_cntrl_activatepump(sv_pumptype);
 extern uint8_t  sv_cntrl_setHepa_dir(void);
@@ -26,7 +26,7 @@ extern Cl_ReturnCodes cl_wait(uint32_t );
 cl_hep_states hp_State = CL_HEP_STATE_IDLE;
 
 static uint16_t cl_hep_bolusrate;
-static uint16_t cl_hep_deliveryrate = 100;
+static uint32_t cl_hep_deliveryrate = 100;
 static uint16_t cl_hep_seconds = 0;
 static uint16_t cl_hep_minutes = 0;
 
@@ -60,12 +60,12 @@ Cl_ReturnCodes cl_hep_set_heparinbolusperiod(void)
 	
 }
 
-Cl_ReturnCodes cl_hep_controller(cl_hep_events hp_event , int16_t data)
+Cl_ReturnCodes cl_hep_controller(cl_hep_events hp_event , int32_t data)
 {
 	Cl_ReturnCodes cl_hep_retcode = CL_OK;
 		cl_hep_pump_states hep_pumpstate = CL_HEP_STATE_IDLE;
 		uint16_t hep_delta_value = 0 ;
-		static uint16_t pwm_period = 0;
+		static uint32_t pwm_period = 0;
 	
 	switch(hp_State)
 	{	
@@ -73,7 +73,17 @@ Cl_ReturnCodes cl_hep_controller(cl_hep_events hp_event , int16_t data)
 		switch(hp_event)
 			{
 				case CL_HEP_EVENT_STARTBOLUS:
+					pwm_period =  cl_hep_deliveryrate ;
+					sv_cntrl_setpumpspeed(HEPARINPUMP,pwm_period);
+					cl_wait(100);
+					sv_cntrl_setHepa_dir();
+					cl_wait(100);
+					sv_cntrl_activatepump(HEPARINPUMP);
 				hp_State = CL_HEP_STATE_BOLUS_ON;
+				break;
+				case CL_HEP_EVENT_STOPBOLUS:
+					cl_hep_retcode =  sv_cntrl_deactivatepump(HEPARINPUMP);
+					hp_State = CL_HEP_STATE_IDLE;
 				break;
 				case CL_HEP_EVENT_START_NORMAL_DELIVERY:
 						pwm_period =  cl_hep_deliveryrate ;
@@ -85,7 +95,7 @@ Cl_ReturnCodes cl_hep_controller(cl_hep_events hp_event , int16_t data)
 					//	cl_hep_pumpFeedback_set_expected_period(cl_hep_deliveryrate);
 					//	cl_hep_pumpFeedback_start();
 
-				hp_State = CL_HEP_STATE_NORMAL_DELIVERY_ON;
+				//hp_State = CL_HEP_STATE_NORMAL_DELIVERY_ON;
 
 				break;
 				case CL_HEP_EVENT_GO_TO_LEFTEND:
@@ -222,8 +232,9 @@ Cl_ReturnCodes cl_hep_controller(cl_hep_events hp_event , int16_t data)
 				cl_hep_seconds = 0;
 				if(cl_hep_minutes++ > HEPARIN_BOLUS_TIMEOUT)
 				{
-					hp_State = CL_HEP_STATE_NORMAL_DELIVERY_ON;
+					hp_State = CL_HEP_STATE_IDLE;
 					cl_hep_minutes = 0;
+					//Cl_mac_apprequesthandler(MACREQ_HEPARIN_BOLUS_COMPLETED);
 				}
 			}
 

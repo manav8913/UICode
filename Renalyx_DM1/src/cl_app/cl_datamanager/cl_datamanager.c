@@ -360,10 +360,10 @@ Cl_ReturnCodes cl_datamamanager(MAC_EVENTS cl_data_event)
 						case ID_dflowulimit:
 						break;
 						case ID_condllimit:
-						Cl_alarmThresholdTable.cond_low_threshold =  datastream.word;
+						Cl_alarmThresholdTable.cond_low_threshold =  datastream.word/10;
 						break;
 						case ID_condulimit:
-						Cl_alarmThresholdTable.cond_high_threshold =  datastream.word;
+						Cl_alarmThresholdTable.cond_high_threshold =  datastream.word/10;
 						break;
 						case ID_aptllimit:
 						Cl_alarmThresholdTable.apt_low_threshold =  datastream.word;

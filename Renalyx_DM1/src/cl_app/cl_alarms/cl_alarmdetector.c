@@ -532,8 +532,6 @@ Cl_ReturnCodes Cl_alarms_scanforAlarms(void)
 	}
 	if(Cl_alarms_alarms[HOLDER1STATUS_OPEN].cl_is_enabled)
 	{
-		
-		
 				if(((Cl_alarms_alarms[HOLDER1STATUS_OPEN].cl_triggertype == LOGIC_HIGH) && (cl_sys_statbuffer.holder1status )) || ((Cl_alarms_alarms[HOLDER1STATUS_OPEN].cl_triggertype == LOGIC_LOW) && (!cl_sys_statbuffer.holder1status )) )
 				{
 					Cl_alarms_alarms[HOLDER1STATUS_OPEN].cl_alarmstate = CL_ALARM_DETECTED;

@@ -811,7 +811,7 @@ PIOA->PIO_ABSR = 0x00090000;
 					switch ( Cl_MacEvent )
 				
 					{
-
+						case MACREQ_HEPARIN_BOLUS_COMPLETED:
 						case EVT_ALERT_TRIGGERED:
 						case EVT_ALARM_TRIGGERED:
 						case EVT_TICK_SEC:

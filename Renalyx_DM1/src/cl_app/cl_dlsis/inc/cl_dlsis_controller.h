@@ -157,9 +157,9 @@ typedef enum {
 
 #define CL_DLSIS_PATH_BO2_V13V14_TIMEOUT 1
 
-#define CL_DLSIS_TIMEOUT_MIN 240
+#define CL_DLSIS_TIMEOUT_MIN 5
 #define CL_DLSIS_TIMEOUT_HRS 0
-#define CL_DLSIS_DURATION 240
+#define CL_DLSIS_DURATION 5
 	
 //prototype definitions of local functions
 Cl_ReturnCodes Cl_Dlsis_Controller(MAC_EVENTS );

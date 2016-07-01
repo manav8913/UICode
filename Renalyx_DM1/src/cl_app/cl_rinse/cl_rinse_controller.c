@@ -27,7 +27,7 @@ typedef union {
 }Datatype;
 
 typedef union {
-	int fourbytedata;
+	uint32_t fourbytedata;
 	int16_t twobytedata;
 	uint8_t bytedata[4] ;
 }StateDatatype;
@@ -114,7 +114,7 @@ extern  Cl_ReturnCodes cl_dprep_activate_prime_related_alarms(void);
 extern Cl_ReturnCodes  Cl_bc_controller(Cl_BC_EventType cl_bc_event);
 extern Cl_ReturnCodes Cl_Alarm_GetAlarmStatus(Cl_NewAlarmIdType  , bool* );
 //static void mdelay(uint32_t );
-
+volatile uint8_t rinse1=0,rinse2=0,rinse3=0,rinse4=0;
 //extern volatile uint32_t g_ul_ms_ticks ;
 Cl_Rinse_States cl_rinsestate = CL_RINSE_STATE_IDLE;
 Cl_Rinsing_SubStates cl_rinsing_substate = CL_RINSE_RINSING_IDLE;
@@ -414,6 +414,37 @@ switch(cl_rinsestate)
 
 					//	UpdateHeaterControls();
 						Cl_Rinsesecondscounter++;
+						if ((Cl_Rinsesecondscounter == 10) && (rinse1 == 1))
+						{
+							Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"RINSE2",6);
+							sv_cntrl_deactivate_valve(VALVE_ID4);
+							sv_cntrl_deactivatepump(DCMOTOR1);
+							sv_cntrl_deactivate_valve(VALVE_ID6);
+							sv_cntrl_deactivate_valve(VALVE_ID8);
+							sv_cntrl_activate_valve(VALVE_ID19);
+							sv_cntrl_activate_valve(VALVE_ID20);
+							rinse2=1;
+						}
+						if ((Cl_Rinsesecondscounter == 30) && (rinse1 == 1) && (rinse2== 1))
+						{
+							Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"RINSE3",6);
+							sv_cntrl_deactivatepump(DCMOTOR2);
+							sv_cntrl_deactivate_valve(VALVE_ID19);
+							sv_cntrl_deactivate_valve(VALVE_ID20);
+							sv_cntrl_activatepump(DCMOTOR1);
+							sv_cntrl_activatepump(DCMOTOR2);
+							sv_cntrl_activate_valve(VALVE_ID6);
+							sv_cntrl_activate_valve(VALVE_ID8);
+							sv_cntrl_activate_valve(VALVE_ID17);
+							rinse3=1;
+						}
+						if ((Cl_Rinsesecondscounter == 55) && (rinse1 == 1) && (rinse2 == 1)&& (rinse3 == 1))
+						{
+							Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"RINSE4",6);
+							sv_cntrl_activate_valve(VALVE_ID4);
+							sv_cntrl_deactivate_valve(VALVE_ID17);
+							rinse4=1;
+						}
 						if(Cl_Rinsesecondscounter == 60)
 						{
 
@@ -422,14 +453,24 @@ switch(cl_rinsestate)
 							Cl_RinseMinutescounter++;
 							if (Cl_RinseMinutescounter == 1)
 							{
-								Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"ON",2);
+								Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"RINSE1",6);
 								sv_cntrl_activate_valve(VALVE_ID4);
+								sv_cntrl_deactivate_valve(VALVE_ID17);
+								rinse1=1;
 							}
-							else if (Cl_RinseMinutescounter == 2)
+							if (Cl_RinseMinutescounter == 2)
 							{
-								Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"OFF",3);
+								Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DONE",6);
 								sv_cntrl_deactivate_valve(VALVE_ID4);
+								sv_cntrl_activate_valve(VALVE_ID17);
+								sv_cntrl_deactivate_valve(VALVE_ID2);
+								sv_cntrl_deactivate_valve(VALVE_ID3);
+								rinse1=0;
+								rinse2=0;
+								rinse3=0;
+								rinse4=0;
 							}
+							
 							Cl_RinseTotalMinutescounter++;
 							if(cl_rinsestate == CL_RINSE_STATE_RINSING)
 							{
@@ -1435,14 +1476,14 @@ Cl_ReturnCodes  Cl_RinseStop(void)
 }
 Cl_ReturnCodes Cl_Rinse_SendRinseStateData(void)
 {
-	static float avgcond = 0;
+	static float cond = 0;
 	Cl_ReturnCodes  Cl_rinseretcode = CL_OK;
 	StateDatatype data;
 	uint8_t count=0;
-	int16_t ts2,temp,temp1;
+	int16_t ts2,temp=0,temp1=0;
 	uint8_t dataarray[12] =  {0,0,0,0,0,0,0,0,0,0,0,0};
 	static timecount = 0;
-	static float avgtmp3 = 0;
+	static float tmp3 = 0, tmp2 = 0;
 	
 	//Cl_Console_bulkdatatype 
 	
@@ -1459,107 +1500,46 @@ Cl_ReturnCodes Cl_Rinse_SendRinseStateData(void)
 	
 	dataarray[0] = CLEAN_DATA;
 	count++;
-	Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp);
-	//data.twobytedata = ts2;
-	
-	//temp = (0.805 * data.twobytedata) - 526 ;
-	temp = (0.8056 * data.twobytedata) - 1450 ;
-	//temp1 = 3000 + (temp * 100)/19;
-
-	temp1 = 3700 + (temp * 1000)/340;
-	
-
-	//data.twobytedata = (uint16_t)temp1;
-	//dataarray[count++] = data.bytedata[0];
-	//dataarray[count++] = data.bytedata[1];
-	
+	//Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp);
+			
 			Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp);
 			{
 				
 				float ftemp,ftemp1;
-				data.fourbytedata = 0;
-				ftemp = temp * 0.805;
+				ftemp = temp * 0.803;
 				calibration_tmp(ftemp,TS3);
-				avgtmp3 =(avgtmp3*5 + temprature_final_value_3)/6;
-				//ftemp1 = 0.0000116 * ftemp *ftemp + 0.0035 *ftemp + 11.157 + 0.6;
-				//avgtmp3 =	(avgtmp3*5 + ftemp1)/6;
-				data.twobytedata = (uint16_t)(avgtmp3 * 10);
+				tmp3 =(tmp3*5 + temprature_final_value_3)/6;
+				data.fourbytedata = (uint16_t)(tmp3 * 10);
 				dataarray[count++] = data.bytedata[0];
 				dataarray[count++] = data.bytedata[1];
 				dataarray[count++] = data.bytedata[2];
 				dataarray[count++] = data.bytedata[3];
 			}
-	
 		
-		Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP2STATUS,&data.twobytedata);
-		//data.twobytedata = ts2;
-		
-		//temp = (0.805 * data.twobytedata) - 526 ;
-		temp = (0.8056 * data.twobytedata) - 1450 ;
-		//temp1 = 3000 + (temp * 100)/19;
-
-		temp1 = 3700 + (temp * 1000)/340;
-		
-
-	//	data.twobytedata = (uint16_t)temp1;
-	//	dataarray[count++] = data.bytedata[0];
-	//	dataarray[count++] = data.bytedata[1];
-
-
-	//	Cl_rinseretcode = Cl_SendDatatoconsole(CON_TX_COMMAND_SYS_STATE_DATA,&dataarray,count);
-		
-					Cl_SysStat_GetSensor_Status_Query(COND_STATUS_HIGH,&temp);
-					{
-						int16_t sensordata=0;
-						sensordata = temp;
-							float cond_comp;
-					if( sensordata < 0)
-					{
-						//temp = 0;
-						avgcond = 0;
-					}
-					if( sensordata > 2400)
-					{
-						float temp,temp1;
-						temp = sensordata * 0.805;
-						//avgcond = temp1/29.6 + 11;
-						//avgcond = avgcond * (1- ((avgtmp3- 25) * 0.02));
-						/*temp=sensordata  * 0.805;
-						avgcond=temp*4.48;
-						avgcond = (avgcond)/100;*/
-						calibration_cond(temp);
-						avgcond =(avgcond*10 + cond_final_cs3)/11;
-						Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp2);
-						{
-							float temp_comp;
-							temp_comp = temp2 * 0.805;
-							calibration_tmp(temp_comp,TS3);
-							avgtmp3 =(avgtmp3*5 + temprature_final_value_3)/6;
-							cond_comp= avgcond/(1+(avgtmp3-25.0)*0.021);
-						}
-						
-					}
-					else
-					{
-						//avgcond = dummy1;
-						avgcond=100;
-					}
-				
-				
-				
-	
-	
-								data.fourbytedata = 0;
-								data.twobytedata = (cond_comp/10);
-								dataarray[count++] = data.bytedata[0];
-								dataarray[count++] = data.bytedata[1];
-								dataarray[count++] = data.bytedata[2];
-								dataarray[count++] = data.bytedata[3];
-					}
-				
-					
-
-		
+		Cl_SysStat_GetSensor_Status_Query(SENSOR_COND_STATUS,&temp);
+		float cond_comp;
+		if (temp > 2400)
+		{
+			float temp2;
+			temp2 = temp * 0.803;
+			calibration_cond(temp2);
+			cond =(cond*5 + cond_final_cs3)/6;
+			Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp1);
+			{
+				float temp_comp;
+				temp_comp = temp1 * 0.803;
+				calibration_tmp(temp_comp,TS3);
+				tmp3 =(tmp3*5 + temprature_final_value_3)/6;
+				cond_comp= cond/(1+(tmp3-25.0)*0.021);
+			}
+		}
+			
+			data.fourbytedata = (cond_comp/10);
+			dataarray[count++] = data.bytedata[0];
+			dataarray[count++] = data.bytedata[1];
+			dataarray[count++] = data.bytedata[2];
+			dataarray[count++] = data.bytedata[3];
+			
 		Cl_rinseretcode = Cl_SendDatatoconsole(CON_TX_COMMAND_SYS_STATE_DATA,&dataarray,count);
 		
 
@@ -1698,13 +1678,16 @@ Cl_ReturnCodes Cl_Rinse_StartRinse(void)
 					
 				Cl_RinseFlowOn();
 				sv_prop_startpropeo_aligning();
+				sv_cntrl_activate_valve(VALVE_ID2);
+				sv_cntrl_activate_valve(VALVE_ID3);
 				//	Cl_rinseretcode = sv_cntrl_setflowpath(BC_FLUSH_OPEN); // sanjeer BC_NEW
 				Cl_rinseretcode =  sv_cntrl_activatepump(DCMOTOR1);
 				Cl_rinseretcode =  sv_cntrl_activatepump(DCMOTOR2);
 				Cl_rinseretcode = sv_cntrl_setpumpspeed(DCMOTOR2,900);
 				Cl_rinseretcode = sv_cntrl_setpumpspeed(DCMOTOR1,960);
-				
-				sv_cs_setpotvalue(2600);
+				uint16_t potvalue = 0;
+				potvalue = (2600 * 1024)/10000;
+				sv_cs_setpotvalue(potvalue);
 				
 				Cl_rinseretcode =  cl_deaeration_controller(CL_DEAER_EVENT_ACTIVATE);
 				

@@ -18,6 +18,7 @@
 #include "cl_app/cl_status/inc/cl_status.h"
 #include "asf.h"
 #include "cl_app/cl_cal/calibration.h"
+#include "cl_app/comp/heparinpumpcontrl/inc/cl_heparincontroller.h"
 
 extern uint8_t sv_cs_setpotvalue(uint32_t resistance) ;
 extern uint32_t Treatdata[ID_MAX_TREAT_PARAM] ;
@@ -61,6 +62,7 @@ Cl_ReturnCodes Cl_dprep_StopMixing(void);
 
 Cl_ReturnCodes cl_dprep_activate_prime_related_alarms(void);
  volatile uint8_t flag=0;
+ extern volatile uint32_t hep_speed;
 extern volatile float cond_final_cs3;
 extern Cl_ReturnCodes  Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype , uint8_t* ,uint8_t );
 extern Cl_ReturnCodes Cl_mac_apprequesthandler(MAC_EVENTS );
@@ -96,6 +98,7 @@ extern uint8_t sv_cntrl_buzzer();
 extern uint8_t sv_cntrl_resetredalarm();
 extern uint8_t sv_cntrl_resetyellowalarm();
 extern uint8_t sv_cntrl_nobuzzer();
+extern Cl_ReturnCodes cl_hep_controller(CL_HEP_EVENT_SET_NORMAL_DELIVERY_RATE,hep_speed);
 
 extern uint8_t sv_cntrl_enable_loopback(void);
 extern uint8_t sv_cntrl_disable_loopback(void);
@@ -121,6 +124,7 @@ extern volatile int16_t pressure_final_apt,pressure_final_vpt,pressure_final_ps1
 	int 	Cl_Dprephourscounter= 0;
 	int 	Cl_DprepTotalMinutescounter= 0;
 	int 	Cl_DprepTotalhourscounter=0;
+	int16_t Cl_Dprep_hepbolus_secondscounter=0;
 	int16_t		Cl_Dprep_filling_secondscounter = 0;
 	int16_t		Cl_Dprep_filling_Minutescounter = 0;
 	int16_t		Cl_Dprep_filling_TotalMinutescounter = 0;
@@ -445,7 +449,7 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 			case EVENT_DPREP_TICK_MINUTE:
 				Cl_Dprep_ResetAlertsforReassertion();
 				Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp_temp3);
-					temp_temp3 = temp_temp3 * 0.805;
+					temp_temp3 = temp_temp3 * 0.803;
 					calibration_tmp(temp_temp3,TS3);
 					temp3_cel = temprature_final_value_3;
 					//temp3_cel = 0.0000116 * temp_temp3 *temp_temp3 + 0.0035 *temp_temp3 + 11.157;
@@ -511,20 +515,62 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 
 					if(Cl_Dprep_CheckforfillingCompletion() == CL_OK )
 					{
+						uint32_t temp = Treatdata[ID_dflow];
+						uint16_t potvalue = 0;
 						//if(cl_dprep_prime_state == CL_DPREP_PRIME_STATE_PRIME_COMPLETED)
 						if(cl_dprep_prime_state == CL_DPREP_PRIME_STATE_PRIME_RCIRC_COMPLETED)
 						{
 						//	SetHeaterState(CL_HEATER_STATE_CLOSED_HEATING);
 						//	sv_cntrl_enable_loopback();
-							 //sv_prop_stopmixing();
+							// sv_prop_stopmixing();
+							switch (temp)
+							{
+								case 800:
+								potvalue = (2600 * 1024)/10000;
+								sv_cs_setpotvalue(potvalue);
+								break;
+								
+								case 500:
+								Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"500",3);
+								potvalue = (1900 * 1024)/10000;
+								sv_cs_setpotvalue(potvalue);
+								break;
+								
+								case 300:
+								potvalue = (1400 * 1024)/10000;
+								sv_cs_setpotvalue(potvalue);
+								break;
+								
+								default:
+								break;
+							}
 							 sv_cntrl_enable_bypass();
 							cl_dprepstate = CL_DPREP_STATE_POST_PRIME_STANDBY;
 									 
 						}
 						else
 						{
-						//	sv_cntrl_enable_loopback();
-						//	 sv_prop_stopmixing();
+							switch (temp)
+							{
+								case 800:
+								potvalue = (2600 * 1024)/10000;
+								sv_cs_setpotvalue(potvalue);
+								break;
+								
+								case 500:
+								Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"500",3);
+								potvalue = (1900 * 1024)/10000;
+								sv_cs_setpotvalue(potvalue);
+								break;
+								
+								case 300:
+								potvalue = (1400 * 1024)/10000;
+								sv_cs_setpotvalue(potvalue);
+								break;
+								
+								default:
+								break;
+							}
 							sv_cntrl_enable_bypass();
 							cl_dprepstate = CL_DPREP_STATE_DPREP_FILLING_DONE;
 							
@@ -811,7 +857,7 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 						break;
 						case  EVENT_DPREP_TICK_MINUTE:
 								Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp_temp3);
-								temp_temp3 = temp_temp3 * 0.805;
+								temp_temp3 = temp_temp3 * 0.803;
 								calibration_tmp(temp_temp3,TS3);
 								temp3_cel = temprature_final_value_3;
 								Cl_Dprep_filling_secondscounter++;
@@ -860,7 +906,7 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 						case EVENT_DPREP_TICK_SECOND:
 						//	UpdateHeaterControls();
 												Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp_temp3);
-												temp_temp3 = temp_temp3 * 0.805;
+												temp_temp3 = temp_temp3 * 0.803;
 												calibration_tmp(temp_temp3,TS3);
 												temp3_cel = temprature_final_value_3;
 											Cl_Dprep_filling_secondscounter++;
@@ -914,7 +960,30 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 							//	Cl_dprepretcode =  sv_cntrl_deactivatepump(DCMOTOR1);
 							//	Cl_dprepretcode =  sv_cntrl_deactivatepump(DCMOTOR2);
 								//sv_cntrl_enable_loopback();
-								// sv_prop_stopmixing();
+								 //sv_prop_stopmixing();
+								 uint32_t temp = Treatdata[ID_dflow];
+								 uint16_t potvalue=0;
+								 switch (temp)
+								 {
+									 case 800:
+									 potvalue = (2600 * 1024)/10000;
+									 sv_cs_setpotvalue(potvalue);
+									 break;
+									 
+									 case 500:
+									 Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"500",3);
+									 potvalue = (1900 * 1024)/10000;
+									 sv_cs_setpotvalue(potvalue);
+									 break;
+									 
+									 case 300:
+									 potvalue = (1400 * 1024)/10000;
+									 sv_cs_setpotvalue(potvalue);
+									 break;
+									 
+									 default:
+									 break;
+								 }
 								sv_cntrl_enable_bypass();
 								Cl_dprepretcode =  	cl_dprep_notifydacandgotodpreptandby();	
 								cl_dprepstate = CL_DPREP_STATE_POST_DPREP_STANDBY;	
@@ -969,31 +1038,43 @@ Cl_ReturnCodes Cl_dprep_controller(MAC_EVENTS Cl_MacDprepEvent)
 				break;
 				case EVENT_DPREP_TICK_SECOND:
 				
-				//uint16_t temp = 0;
 				
-					//Cl_SysStat_GetSensor_Status_Query(SENSOR_BDSTATUS , &temp);
-					//if( temp == 0)
-					//{
-						
-							//Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"BLOOD",5);
-					//}
-				//Cl_Dprep_SendPrepStateData();
-			//	Cl_Dprep_ResetAlertsforReassertion();
-			if(Cl_PatientState == CL_DPREP_PATIENT_STATE_WAITING_FOR_BD )
-			{
-				Cl_SysStat_GetSensor_Status_Query(SENSOR_BDSTATUS , &temp);
+					if(Cl_PatientState == CL_DPREP_PATIENT_STATE_WAITING_FOR_BD )
+					{
+						Cl_SysStat_GetSensor_Status_Query(SENSOR_BDSTATUS , &temp);
 				
 					if(temp == 0)
-				{
+					{
 					Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"BLOOD",5);
 					//	Cl_dprepretcode = Cl_SendDatatoconsole(CON_TX_COMMAND_READY_FOR_DIALYSIS,NULL,0);
 					//	cl_dprepstate = CL_DPREP_STATE_READY_FOR_DALYSIS;
-									
 									Cl_dprepretcode = Cl_SendDatatoconsole(CON_TX_COMMAND_BLOOD_DETECTED,NULL,0);
 									Cl_PatientState = CL_DPREP_PATIENT_STATE_BLOOD_DETECTED;
-				}
-			}
+									
+							
+										uint32_t temp = Treatdata[ID_bolusvol];
+										hep_calibration(temp);
+										Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&temp,2);
+										Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTDATA,&hep_speed,2);
+										cl_hep_controller(CL_HEP_EVENT_SET_NORMAL_DELIVERY_RATE,hep_speed);
+										cl_wait(100);
+										cl_hep_controller(CL_HEP_EVENT_START_NORMAL_DELIVERY,0);
+										Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"HEPARIN",7);
+										
+									
+					}
 				
+					}
+					if(Cl_PatientState == CL_DPREP_PATIENT_STATE_BLOOD_DETECTED )
+					{
+					Cl_Dprep_hepbolus_secondscounter++;
+					if (Cl_Dprep_hepbolus_secondscounter == 60)
+					{
+						Cl_Dprep_hepbolus_secondscounter = 0;
+						Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"DONE_HP",7);
+						cl_hep_controller(CL_HEP_EVENT_STOPBOLUS,0);
+					}
+					}
 				break;
 			}
 		
@@ -1777,62 +1858,39 @@ Cl_ReturnCodes Cl_Dprep_SendtreatementData(void)
 }
 Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype)
 {
-	static float avgcond = 0;
+	static float cond = 0;
 	uint8_t systemdataarray[40] =  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	cl_PrepDatatype tempdata;
-	int16_t temp, temp1;
+	int16_t temp=0, temp1=0;
 	static timecount = 0;
-	static float avgtmp3=0;
+	static float tmp3=0,apt=0,vpt=0;
 	Cl_ReturnCodes Cl_dprepretcode = CL_OK;
 	uint8_t count = 0;
 	Cl_ConsoleTxCommandtype command = CON_TX_COMMAND_COMMAND_MAX;
 	uint16_t sensordatamillivolts;
-	//Cl_Console_bulkdatatype
-	
-	
-						
+
 					command = CON_TX_COMMAND_SYS_STATE_DATA ;
 					systemdataarray[0] = datatype;
 					count++;
-
-
 					Cl_SysStat_GetSensor_Status_Query(SENSOR_COND_STATUS,&temp);
 					{
-						int16_t sensordata=0;
-						sensordata = temp;
-							float cond_comp;
-					if( sensordata < 0)
+					float cond_comp;
+					if( temp > 2400)
 					{
-						//temp = 0;
-						avgcond = 0;
-					}
-					if( sensordata > 2400)
-					{
-						float temp,temp1;
-						temp = sensordata * 0.805;
-						//avgcond = temp1/29.6 + 11;
-						//avgcond = avgcond * (1- ((avgtmp3- 25) * 0.02));
-						/*temp=sensordata  * 0.805;
-						avgcond=temp*4.48;
-						avgcond = (avgcond)/100;*/
-						calibration_cond(temp);
-						avgcond =(avgcond*10 + cond_final_cs3)/11;
-						Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp);
+						float temp2;
+						temp2 = temp * 0.803;
+						calibration_cond(temp2);
+						cond =(cond*5 + cond_final_cs3)/6;
+						Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp1);
 						{
 							float temp_comp;
-							temp_comp = temp * 0.805;
+							temp_comp = temp1 * 0.803;
 							calibration_tmp(temp_comp,TS3);
-							avgtmp3 =(avgtmp3*5 + temprature_final_value_3)/6;
-							cond_comp= avgcond/(1+(avgtmp3-25.0)*0.021);
+							tmp3 =(tmp3*5 + temprature_final_value_3)/6;
+							cond_comp= cond/(1+(tmp3-25.0)*0.021);
 						}
 						
 					}
-					else
-					{
-						//avgcond = dummy1;
-						avgcond=100;
-					}
-						
 						tempdata.word = (cond_comp/10);
 						systemdataarray[count++] = tempdata.bytearray[0];
 						systemdataarray[count++] = tempdata.bytearray[1];
@@ -1844,13 +1902,11 @@ Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype)
 		
 		Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp);
 		{
-			tempdata.word = temp;
 			float ftemp,ftemp1;
-			ftemp = tempdata.word * 0.805;
+			ftemp = temp * 0.803;
 			calibration_tmp(ftemp,TS3);
-			avgtmp3 =(avgtmp3*5 + temprature_final_value_3)/6;
-			//avgtmp3 = dummy3 ;
-			tempdata.word = (uint16_t)(avgtmp3 * 10);
+			tmp3 =(tmp3*5 + temprature_final_value_3)/6;
+			tempdata.word = (uint16_t)(tmp3 * 10);
 			systemdataarray[count++] = tempdata.bytearray[0];
 			systemdataarray[count++] = tempdata.bytearray[1];
 			systemdataarray[count++] = tempdata.bytearray[2];
@@ -1859,16 +1915,10 @@ Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype)
 		
 		Cl_SysStat_GetSensor_Status_Query(SENSOR_APTSTATUS,&tempdata.Twobyte);
 		{
-						
-		
-		//	float ftemp,ftemp1;
-		//	ftemp = data.twobytedata * 0.805;
-		//	ftemp1 = 0.0000116 * ftemp *ftemp + 0.0035 *ftemp + 11.157 + 0.6;
-		//	avgtmp3 =	(avgtmp3*5 + ftemp1)/6;
-		//	data.twobytedata = (uint16_t)(avgtmp3 * 100);
-							sensordatamillivolts = (tempdata.Twobyte * 0.805) ;
+							sensordatamillivolts = (tempdata.Twobyte * 0.803) ;
 							calibration_apt(sensordatamillivolts);
-							tempdata.word	 = pressure_final_apt;
+							apt =(apt*5 + pressure_final_apt)/6;
+							tempdata.word	 = (uint16_t)(apt);
 							systemdataarray[count++] = tempdata.bytearray[0] ;
 							systemdataarray[count++] = tempdata.bytearray[1] ;
 							systemdataarray[count++] = tempdata.bytearray[2] ;
@@ -1876,28 +1926,22 @@ Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype)
 		}
 		Cl_SysStat_GetSensor_Status_Query(SENSOR_VPTSTATUS,&tempdata.Twobyte);
 		{
-					
-			//	float ftemp,ftemp1;
-			//	ftemp = data.twobytedata * 0.805;
-			//	ftemp1 = 0.0000116 * ftemp *ftemp + 0.0035 *ftemp + 11.157 + 0.6;
-						//	avgtmp3 =	(avgtmp3*5 + ftemp1)/6;
-						//	data.twobytedata = (uint16_t)(avgtmp3 * 100);
-					sensordatamillivolts = (tempdata.Twobyte * 0.805) ;
-					calibration_apt(sensordatamillivolts);
-					tempdata.word	 = pressure_final_vpt;
-					tempdata.word	 = 30 * 100;
+					sensordatamillivolts = (tempdata.Twobyte * 0.803) ;
+					calibration_vpt(sensordatamillivolts);
+					vpt =(vpt*5 + pressure_final_vpt)/6;
+					tempdata.word	 = (uint16_t)(vpt);
 					systemdataarray[count++] = tempdata.bytearray[0] ;
 					systemdataarray[count++] = tempdata.bytearray[1] ;
 					systemdataarray[count++] = tempdata.bytearray[2] ;
 					systemdataarray[count++] = tempdata.bytearray[3] ;
 		}
 		Cl_SysStat_GetSensor_Status_Query(SENSOR_PS1STATUS,&tempdata.Twobyte);
-							sensordatamillivolts = (tempdata.Twobyte * 0.805) ;
-							calibration_apt(sensordatamillivolts);
+							sensordatamillivolts = (tempdata.Twobyte * 0.803) ;
+							calibration_ps1(sensordatamillivolts);
 							
 		Cl_SysStat_GetSensor_Status_Query(SENSOR_PS2STATUS,&tempdata.Twobyte);
-							sensordatamillivolts = (tempdata.Twobyte * 0.805) ;
-							calibration_apt(sensordatamillivolts);
+							sensordatamillivolts = (tempdata.Twobyte * 0.803) ;
+							calibration_ps2(sensordatamillivolts);
 							tempdata.word	 = ((pressure_final_apt + pressure_final_vpt ) - (pressure_final_ps1+pressure_final_ps2))/2;
 
 		if( datatype == DIALYSIS_PREP_DATA)
@@ -1911,8 +1955,6 @@ Cl_ReturnCodes Cl_Dprep_SendPrepStateData(Cl_Console_bulkdatatype datatype)
 		
 					Cl_dprepretcode = Cl_SendDatatoconsole(CON_TX_COMMAND_SYS_STATE_DATA,&systemdataarray,count);
 					//Cl_Dlsis_SenddlsisData();
-		
-	
 	
 }
 
@@ -2599,35 +2641,40 @@ Cl_ReturnCodes	Cl_Dprep_StartPreparation(void)
 							{
 								//			Cl_rinseretcode =  Cl_AlarmActivateAlarms( PS3STATUS_HIGH,true );
 							}
-							uint32_t temp = Treatdata[ID_dflow];
-							switch (temp)
-							{
-								case 800:
-									Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"800",3);
-									sv_cntrl_setpumpspeed(DCMOTOR2,900);
-								    sv_cntrl_setpumpspeed(DCMOTOR1,960);
-									sv_cs_setpotvalue(2600);
-								break;
-								case 500:
-									Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"500",3);
-									sv_cntrl_setpumpspeed(DCMOTOR2,900);
-									sv_cntrl_setpumpspeed(DCMOTOR1,650);
-									sv_cs_setpotvalue(1700);
-								break;
-								case 300:
-									Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"300",5);
-									sv_cntrl_setpumpspeed(DCMOTOR2,900);
-									sv_cntrl_setpumpspeed(DCMOTOR1,360);
-									sv_cs_setpotvalue(1400);
-								break;
-								default:
-								break;
-							}
 							Cl_dprepretcode =  sv_cntrl_activatepump(DCMOTOR1);
 							Cl_dprepretcode =  sv_cntrl_activatepump(DCMOTOR2);
 							Cl_dprepretcode = Cl_bc_controller(BC_EVENT_RESUME);
 							//sv_cntrl_enable_bypass();
 							sv_prop_startmixing();
+							uint32_t temp = Treatdata[ID_dflow];
+							uint16_t potvalue = 0;
+							switch (temp)
+							{
+								case 800:
+								sv_cntrl_setpumpspeed(DCMOTOR2,900);
+								sv_cntrl_setpumpspeed(DCMOTOR1,960);
+								potvalue = (2600 * 1024)/10000;
+								sv_cs_setpotvalue(potvalue);
+								break;
+								
+								case 500:
+								Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"500",3);
+								sv_cntrl_setpumpspeed(DCMOTOR2,900);
+								sv_cntrl_setpumpspeed(DCMOTOR1,650);
+								potvalue = (1900 * 1024)/10000;
+								sv_cs_setpotvalue(potvalue);
+								break;
+								
+								case 300:
+								sv_cntrl_setpumpspeed(DCMOTOR2,900);
+								sv_cntrl_setpumpspeed(DCMOTOR1,360);
+								potvalue = (1400 * 1024)/10000;
+								sv_cs_setpotvalue(potvalue);
+								break;
+								
+								default:
+								break;
+							}
 							Cl_dprepretcode = SetHeaterState(CL_HEATER_STATE_ON);
 							cl_dprepstate = CL_DPREP_STATE_DPREP_FILLING;
 							
@@ -2683,15 +2730,7 @@ Cl_ReturnCodes	Cl_Dprep_StartPreparation(void)
 			Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP2_LOW_THRESHOLD,true );
 			Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP3_HIGH_THRESHOLD,true );
 			Cl_dprepretcode =  Cl_AlarmActivateAlarms(TEMP3_LOW_THRESHOLD,true );
-			
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_STATUS_HIGH,true );
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_STATUS_LOW,true );
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_DAC_OPEN,true );
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_DAC_RO,true );
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(COND_DAC_HIGH,true );
-			
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(APTSTATUS_HIGH,true );
-	//		Cl_dprepretcode =  Cl_AlarmActivateAlarms(VPTSTATUS_HIGH,true );
+		
 			if(Current_sense_trigger)
 			{
 				Cl_dprepretcode =  Cl_AlarmActivateAlarms( FPCURRENTSTATUS,true );
@@ -2700,35 +2739,40 @@ Cl_ReturnCodes	Cl_Dprep_StartPreparation(void)
 			{
 				//			Cl_rinseretcode =  Cl_AlarmActivateAlarms( PS3STATUS_HIGH,true );
 			}
+			
+			Cl_dprepretcode =  sv_cntrl_activatepump(DCMOTOR1);
+			Cl_dprepretcode =  sv_cntrl_activatepump(DCMOTOR2);
+			
+			Cl_dprepretcode =  sv_cntrl_disable_bypass();
 			uint32_t temp = Treatdata[ID_dflow];
+			uint16_t potvalue = 0;
 			switch (temp)
 			{
 				case 800:
 				sv_cntrl_setpumpspeed(DCMOTOR2,900);
 				sv_cntrl_setpumpspeed(DCMOTOR1,960);
-				sv_cs_setpotvalue(2600);
+				potvalue = (2600 * 1024)/10000;
+				sv_cs_setpotvalue(potvalue);
 				break;
 				
 				case 500:
 				Cl_SendDatatoconsole(CON_TX_COMMAND_PRINTTEXT,"500",3);
 				sv_cntrl_setpumpspeed(DCMOTOR2,900);
 				sv_cntrl_setpumpspeed(DCMOTOR1,650);
-				sv_cs_setpotvalue(1700);
+				potvalue = (1900 * 1024)/10000;
+				sv_cs_setpotvalue(potvalue);
 				break;
 				
 				case 300:
 				sv_cntrl_setpumpspeed(DCMOTOR2,900);
 				sv_cntrl_setpumpspeed(DCMOTOR1,360);
-				sv_cs_setpotvalue(1400);
+				potvalue = (1400 * 1024)/10000;
+				sv_cs_setpotvalue(potvalue);
 				break;
 				
 				default:
 				break;
 			}
-			Cl_dprepretcode =  sv_cntrl_activatepump(DCMOTOR1);
-			Cl_dprepretcode =  sv_cntrl_activatepump(DCMOTOR2);
-			
-			Cl_dprepretcode =  sv_cntrl_disable_bypass();
 			
 			if(cl_dprep_prime_state != CL_DPREP_PRIME_STATE_DIALYSER_PRIMING)
 			{

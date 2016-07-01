@@ -416,7 +416,7 @@ Cl_ReturnCodes Cl_SendDatatoconsole(Cl_ConsoleTxCommandtype command, uint8_t* da
 		
 			if(( CON_TX_COMMAND_COMMAND_SCRIPT_PRNIT == command)|| ( command == CON_TX_COMMAND_PRINTDATA) ||(command == CON_TX_COMMAND_PRINTTEXT))
 			{
-				return;
+				//return;
 			}
 		
 	if( ( command != CON_TX_COMMAND_PRINTDATA) && (command != CON_TX_COMMAND_PRINTTEXT) )

@@ -128,8 +128,8 @@ Cl_ReturnCodes 		Cl_SysStat_System_Status_Query(void)
 	cl_sys_statbuffer.FPcurrentstatus = sv_test_sys_statbuffer.FPcurrentstatus;
 	cl_sys_statbuffer.DGPcurrentstatus = sv_test_sys_statbuffer.DGPcurrentstatus;
 	cl_sys_statbuffer.UFPstatus = sv_test_sys_statbuffer.UFPstatus;
-	cl_sys_statbuffer.holder1status = 	sv_test_sys_statbuffer.holderstatus;
-	cl_sys_statbuffer.holder2status = sv_test_sys_statbuffer.holderstatus;
+	cl_sys_statbuffer.holder1status = 	sv_test_sys_statbuffer.holder1status;
+	cl_sys_statbuffer.holder2status = sv_test_sys_statbuffer.holder2status;
 	cl_sys_statbuffer.Hpstatus = sv_test_sys_statbuffer.Hpstatus;
 	cl_sys_statbuffer.levelswitch1 = sv_test_sys_statbuffer.levelswitch1;
 	//cl_sys_statbuffer.levelswitch2 = sv_test_sys_statbuffer.levelswitch2;
@@ -502,7 +502,7 @@ void Cl_SysStat_mean_status_update(void)
 						avgcond=temp*4.48;
 						avgcond = (avgcond)/100;*/
 						calibration_cond(temp);
-						avgcond =(avgcond*10 + cond_final_cs3)/11;
+						avgcond =(avgcond*5 + cond_final_cs3)/6;
 						bulk_data[3] = temp;
 						Cl_SysStat_GetSensor_Status_Query(SENSOR_TEMP3STATUS,&temp2);
 						{
